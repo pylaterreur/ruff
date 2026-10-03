@@ -4,7 +4,7 @@ use crate::{Db, ReferenceTarget};
 use ruff_db::files::File;
 use ruff_text_size::{Ranged, TextSize};
 use ty_python_core::ProgramFile;
-use ty_python_semantic::SemanticModel;
+use ty_python_semantic::{ResolvedDefinition, SemanticModel};
 
 /// Returns the range of the symbol if it can be renamed, None if not.
 pub fn can_rename(
@@ -30,10 +30,19 @@ pub fn can_rename(
 
     let current_file_in_project = is_file_in_project(db, source_file);
 
-    let declaration_targets = goto_target
+    let declarations = goto_target
         .definitions(&model, ReferencesMode::Rename.to_import_alias_resolution())?
-        .goto_declaration(&model, &goto_target)?
-        .into_navigation_targets(model.db());
+        .goto_declaration(&model, &goto_target)?;
+
+    // Don't allow renaming of modules, which would require renaming their files
+    if declarations
+        .iter()
+        .any(|declaration| matches!(declaration, ResolvedDefinition::Module(_)))
+    {
+        return None;
+    }
+
+    let declaration_targets = declarations.into_navigation_targets(model.db());
 
     for target in &declaration_targets {
         let target_file = target.file();
@@ -1030,8 +1039,7 @@ x = module_a<CURSOR>
             .source("mypackage/module_a.py", "class Test: ...")
             .build();
 
-        // TODO: should refuse to rename a module, which would require renaming its file
-        assert_snapshot!(test.prepare_rename(), @"Can rename symbol at range 36..44");
+        assert_snapshot!(test.prepare_rename(), @"Cannot rename");
     }
 
     #[test]

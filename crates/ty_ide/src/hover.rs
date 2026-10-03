@@ -4140,13 +4140,17 @@ def function():
             .source("lib/sub.py", "'''The lib.sub module.'''")
             .build();
 
-        // TODO: should show the docstring of `lib/sub.py`
         assert_snapshot!(test.hover(), @"
         <module 'lib.sub'>
+        ---------------------------------------------
+        The lib.sub module.
+
         ---------------------------------------------
         ```xml
         <module 'lib.sub'>
         ```
+        ---
+        The lib.sub module.
         ---------------------------------------------
         info[hover]: Hovered content is
          --> main.py:4:5

@@ -367,8 +367,9 @@ pub(crate) fn definitions_for_attribute<'db>(
     for ty in expanded_tys {
         // Handle modules
         if let Type::ModuleLiteral(module_literal) = ty {
-            if let Some(module_file) = module_literal
-                .module(db)
+            let module = module_literal.module(db);
+            let resolved_before = resolved.len();
+            if let Some(module_file) = module
                 .file(db)
                 .map(|file| ProgramFile::new(db, file, env.program(db)))
             {
@@ -382,6 +383,23 @@ pub(crate) fn definitions_for_attribute<'db>(
                         ImportAliasResolution::ResolveAliases,
                     ));
                 }
+            }
+            // `import pkg.sub` makes `pkg.sub` available without binding `sub` in the package's
+            // `__init__.py`, and a namespace package has no `__init__.py` at all. In both cases,
+            // fall back to the `pkg.sub` submodule.
+            if resolved.len() == resolved_before
+                && let Some(importing_file) = module_literal.importing_file(db)
+            {
+                resolved.extend(resolve_from_import_submodule_definitions(
+                    db,
+                    env,
+                    ImportingFile::File(
+                        importing_file.file(db),
+                        importing_file.resolver_environment(db),
+                    ),
+                    name_str,
+                    module.name(db),
+                ));
             }
             continue;
         }
@@ -797,7 +815,7 @@ pub(crate) fn resolve_from_import_definitions<'db>(
     }
 }
 
-// Helper to resolve `from x.y import z` assuming `x.y.z` is a module.
+// Helper to resolve `z` in `from x.y import z` or `x.y.z` assuming `x.y.z` is a module.
 fn resolve_from_import_submodule_definitions<'db>(
     db: &'db dyn Db,
     env: &ProgramEnvironment<'db>,

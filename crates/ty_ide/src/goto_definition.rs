@@ -349,8 +349,18 @@ x = mypackage.module_a<CURSOR>
             .source("mypackage/module_a.py", "class Test: ...")
             .build();
 
-        // TODO: should find `mypackage/module_a.py`
-        assert_snapshot!(test.goto_definition(), @"No goto target found");
+        assert_snapshot!(test.goto_definition(), @"
+        info[goto-definition]: Go to definition
+         --> main.py:3:15
+          |
+        3 | x = mypackage.module_a
+          |               ^^^^^^^^ Clicking here
+        info: Found 1 definition
+         --> mypackage/module_a.py:1:1
+          |
+        1 | class Test: ...
+          | -
+        ");
     }
 
     #[test]
@@ -368,8 +378,18 @@ x = mypackage.subpackage.module_a<CURSOR>
             .source("mypackage/subpackage/module_a.py", "class Test: ...")
             .build();
 
-        // TODO: should find `mypackage/subpackage/module_a.py`
-        assert_snapshot!(test.goto_definition(), @"No goto target found");
+        assert_snapshot!(test.goto_definition(), @"
+        info[goto-definition]: Go to definition
+         --> main.py:3:26
+          |
+        3 | x = mypackage.subpackage.module_a
+          |                          ^^^^^^^^ Clicking here
+        info: Found 1 definition
+         --> mypackage/subpackage/module_a.py:1:1
+          |
+        1 | class Test: ...
+          | -
+        ");
     }
 
     #[test]
@@ -388,8 +408,18 @@ x = mypackage.module_a<CURSOR>
 
         // `mypackage.module_a` only exists if some module imported it (ty reports
         // `possibly-missing-submodule` here), but if it exists, it's this submodule.
-        // TODO: should find `mypackage/module_a.py`
-        assert_snapshot!(test.goto_definition(), @"No goto target found");
+        assert_snapshot!(test.goto_definition(), @"
+        info[goto-definition]: Go to definition
+         --> main.py:3:15
+          |
+        3 | x = mypackage.module_a
+          |               ^^^^^^^^ Clicking here
+        info: Found 1 definition
+         --> mypackage/module_a.py:1:1
+          |
+        1 | class Test: ...
+          | -
+        ");
     }
 
     /// goto-definition on a module should go to the .py not the .pyi

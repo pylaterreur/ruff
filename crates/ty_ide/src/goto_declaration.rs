@@ -2502,8 +2502,18 @@ x = nspackage.module_a<CURSOR>
             .source("nspackage/module_a.py", "class Test: ...")
             .build();
 
-        // TODO: should find `nspackage/module_a.py`
-        assert_snapshot!(test.goto_declaration(), @"No goto target found");
+        assert_snapshot!(test.goto_declaration(), @"
+        info[goto-declaration]: Go to declaration
+         --> main.py:3:15
+          |
+        3 | x = nspackage.module_a
+          |               ^^^^^^^^ Clicking here
+        info: Found 1 declaration
+         --> nspackage/module_a.py:1:1
+          |
+        1 | class Test: ...
+          | -
+        ");
     }
 
     #[test]
