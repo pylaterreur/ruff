@@ -59,3 +59,9 @@ t"\"normal\" {t"nested"} normal"  # Q003
 t"\"normal\" {t"nested"} 'single quotes'"
 t"\"normal\" {t"\"nested\" {"other"} normal"} 'single quotes'"  # Q003
 t"\"normal\" {t"\"nested\" {"other"} 'single quotes'"} normal"  # Q003
+
+
+# https://github.com/astral-sh/ruff/issues/12641
+print(''"\"")
+print(''"\""'''''')  # ''')
+print(''u"\"")

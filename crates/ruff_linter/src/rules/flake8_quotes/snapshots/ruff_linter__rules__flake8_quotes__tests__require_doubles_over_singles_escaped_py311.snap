@@ -219,4 +219,53 @@ help: Change outer quotes to avoid escaping inner quotes
 60 | t"\"normal\" {t"\"nested\" {"other"} normal"} 'single quotes'"  # Q003
    - t"\"normal\" {t"\"nested\" {"other"} 'single quotes'"} normal"  # Q003
 61 + t'"normal" {t"\"nested\" {"other"} 'single quotes'"} normal'  # Q003
+62 |
+   |
+
+Q003 [*] Change outer quotes to avoid escaping inner quotes
+  --> singles_escaped.py:65:9
+   |
+64 | # https://github.com/astral-sh/ruff/issues/12641
+65 | print(''"\"")
+   |         ^^^^
+66 | print(''"\""'''''')  # ''')
+67 | print(''u"\"")
+   |
+help: Change outer quotes to avoid escaping inner quotes
+   |
+64 | # https://github.com/astral-sh/ruff/issues/12641
+   - print(''"\"")
+65 + print('' '"')
+66 | print(''"\""'''''')  # ''')
+   |
+
+Q003 [*] Change outer quotes to avoid escaping inner quotes
+  --> singles_escaped.py:66:9
+   |
+64 | # https://github.com/astral-sh/ruff/issues/12641
+65 | print(''"\"")
+66 | print(''"\""'''''')  # ''')
+   |         ^^^^
+67 | print(''u"\"")
+   |
+help: Change outer quotes to avoid escaping inner quotes
+   |
+65 | print(''"\"")
+   - print(''"\""'''''')  # ''')
+66 + print('' '"''''''')  # ''')
+67 | print(''u"\"")
+   |
+
+Q003 [*] Change outer quotes to avoid escaping inner quotes
+  --> singles_escaped.py:67:9
+   |
+65 | print(''"\"")
+66 | print(''"\""'''''')  # ''')
+67 | print(''u"\"")
+   |         ^^^^^
+help: Change outer quotes to avoid escaping inner quotes
+   |
+66 | print(''"\""'''''')  # ''')
+   - print(''u"\"")
+67 + print(''u'"')
    |

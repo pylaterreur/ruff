@@ -240,7 +240,11 @@ impl<'a> From<&'a str> for Trivia<'a> {
 }
 
 /// Returns `true` if the [`TextRange`] is preceded by two consecutive quotes.
-fn text_starts_at_consecutive_quote(locator: &Locator, range: TextRange, quote: Quote) -> bool {
+pub(super) fn text_starts_at_consecutive_quote(
+    locator: &Locator,
+    range: TextRange,
+    quote: Quote,
+) -> bool {
     let mut previous_two_chars = locator.up_to(range.start()).chars().rev();
     previous_two_chars.next() == Some(good_docstring(quote))
         && previous_two_chars.next() == Some(good_docstring(quote))

@@ -1,4 +1,5 @@
 use flake8_quotes::helpers::{contains_escaped_quote, raw_contents, unescape_string};
+use flake8_quotes::rules::check_string_quotes::text_starts_at_consecutive_quote;
 use flake8_quotes::settings::Quote;
 use ruff_macros::{ViolationMetadata, derive_message_formats};
 use ruff_python_ast::visitor::{Visitor, walk_f_string, walk_t_string};
@@ -275,8 +276,20 @@ fn check_string_or_bytes(
     }
 
     let mut diagnostic = checker.report_diagnostic(AvoidableEscapedQuote, range);
+    // If the string directly follows an empty string that uses the new quotes, add a space so
+    // that the quotes don't merge into a triple quote (e.g., `''"\""` becomes `'' '"'`).
+    let separator = if flags.prefix().as_str().is_empty()
+        && text_starts_at_consecutive_quote(
+            locator,
+            range,
+            quotes_settings.inline_quotes.opposite(),
+        ) {
+        " "
+    } else {
+        ""
+    };
     let fixed_contents = format!(
-        "{prefix}{quote}{value}{quote}",
+        "{separator}{prefix}{quote}{value}{quote}",
         prefix = flags.prefix(),
         quote = quotes_settings.inline_quotes.opposite().as_char(),
         value = unescape_string(contents, quotes_settings.inline_quotes.as_char())
