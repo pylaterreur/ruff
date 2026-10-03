@@ -2490,6 +2490,23 @@ def ab(a: int, *, c: int): ...
     }
 
     #[test]
+    fn goto_declaration_namespace_package_submodule_attribute() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import nspackage.module_a
+x = nspackage.module_a<CURSOR>
+",
+            )
+            .source("nspackage/module_a.py", "class Test: ...")
+            .build();
+
+        // TODO: should find `nspackage/module_a.py`
+        assert_snapshot!(test.goto_declaration(), @"No goto target found");
+    }
+
+    #[test]
     fn goto_declaration_submodule_import_from_use() {
         let test = CursorTest::builder()
             .source(

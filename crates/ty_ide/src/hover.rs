@@ -4125,6 +4125,41 @@ def function():
     }
 
     #[test]
+    fn hover_submodule_attribute() {
+        let test = CursorTest::builder()
+            .snapshot_filter("  \n", "<HB>\n")
+            .source(
+                "main.py",
+                r#"
+            import lib.sub
+
+            lib.su<CURSOR>b
+            "#,
+            )
+            .source("lib/__init__.py", "")
+            .source("lib/sub.py", "'''The lib.sub module.'''")
+            .build();
+
+        // TODO: should show the docstring of `lib/sub.py`
+        assert_snapshot!(test.hover(), @"
+        <module 'lib.sub'>
+        ---------------------------------------------
+        ```xml
+        <module 'lib.sub'>
+        ```
+        ---------------------------------------------
+        info[hover]: Hovered content is
+         --> main.py:4:5
+          |
+        4 | lib.sub
+          |     ^^-
+          |     | |
+          |     | Cursor offset
+          |     source
+        ");
+    }
+
+    #[test]
     fn hover_module_import() {
         let mut test = hover_test(
             r#"

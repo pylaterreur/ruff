@@ -335,6 +335,63 @@ def outer(items):
         ");
     }
 
+    #[test]
+    fn goto_definition_submodule_attribute() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mypackage.module_a
+x = mypackage.module_a<CURSOR>
+",
+            )
+            .source("mypackage/__init__.py", "")
+            .source("mypackage/module_a.py", "class Test: ...")
+            .build();
+
+        // TODO: should find `mypackage/module_a.py`
+        assert_snapshot!(test.goto_definition(), @"No goto target found");
+    }
+
+    #[test]
+    fn goto_definition_nested_submodule_attribute() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mypackage.subpackage.module_a
+x = mypackage.subpackage.module_a<CURSOR>
+",
+            )
+            .source("mypackage/__init__.py", "")
+            .source("mypackage/subpackage/__init__.py", "")
+            .source("mypackage/subpackage/module_a.py", "class Test: ...")
+            .build();
+
+        // TODO: should find `mypackage/subpackage/module_a.py`
+        assert_snapshot!(test.goto_definition(), @"No goto target found");
+    }
+
+    #[test]
+    fn goto_definition_unimported_submodule_attribute() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mypackage
+x = mypackage.module_a<CURSOR>
+",
+            )
+            .source("mypackage/__init__.py", "")
+            .source("mypackage/module_a.py", "class Test: ...")
+            .build();
+
+        // `mypackage.module_a` only exists if some module imported it (ty reports
+        // `possibly-missing-submodule` here), but if it exists, it's this submodule.
+        // TODO: should find `mypackage/module_a.py`
+        assert_snapshot!(test.goto_definition(), @"No goto target found");
+    }
+
     /// goto-definition on a module should go to the .py not the .pyi
     ///
     /// TODO: this currently doesn't work right! This is especially surprising

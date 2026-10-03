@@ -1000,6 +1000,41 @@ result = join('a', 'b')
     }
 
     #[test]
+    fn cannot_rename_submodule_attribute() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mypackage.module_a
+x = mypackage.module_a<CURSOR>
+",
+            )
+            .source("mypackage/__init__.py", "")
+            .source("mypackage/module_a.py", "class Test: ...")
+            .build();
+
+        assert_snapshot!(test.prepare_rename(), @"Cannot rename");
+    }
+
+    #[test]
+    fn cannot_rename_imported_submodule() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+from mypackage import module_a
+x = module_a<CURSOR>
+",
+            )
+            .source("mypackage/__init__.py", "")
+            .source("mypackage/module_a.py", "class Test: ...")
+            .build();
+
+        // TODO: should refuse to rename a module, which would require renaming its file
+        assert_snapshot!(test.prepare_rename(), @"Can rename symbol at range 36..44");
+    }
+
+    #[test]
     fn cannot_rename_external_file() {
         // This test verifies that we cannot rename a symbol when it's defined in a file
         // that's outside the project (like a standard library function)
