@@ -1,0 +1,1126 @@
+---
+source: crates/ruff_python_parser/tests/fixtures.rs
+input_file: crates/ruff_python_parser/resources/inline/err/interpolated_string_literal_pattern.py
+---
+## AST
+
+```
+Module(
+    ModModule {
+        node_index: NodeIndex(None),
+        range: 0..357,
+        body: [
+            Match(
+                StmtMatch {
+                    node_index: NodeIndex(None),
+                    range: 0..356,
+                    subject: Name(
+                        ExprName {
+                            node_index: NodeIndex(None),
+                            range: 6..7,
+                            id: Name("x"),
+                            ctx: Load,
+                        },
+                    ),
+                    cases: [
+                        MatchCase {
+                            range: 13..27,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 18..22,
+                                    value: FString(
+                                        ExprFString {
+                                            node_index: NodeIndex(None),
+                                            range: 18..22,
+                                            value: FStringValue {
+                                                inner: Single(
+                                                    FString {
+                                                        range: 18..22,
+                                                        node_index: NodeIndex(None),
+                                                        elements: [
+                                                            Literal(
+                                                                InterpolatedStringLiteralElement {
+                                                                    range: 20..21,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                },
+                                                            ),
+                                                        ],
+                                                        flags: FStringFlags {
+                                                            quote_style: Double,
+                                                            prefix: Regular,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 24..27,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 24..27,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 32..48,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 37..43,
+                                    value: FString(
+                                        ExprFString {
+                                            node_index: NodeIndex(None),
+                                            range: 37..43,
+                                            value: FStringValue {
+                                                inner: Single(
+                                                    FString {
+                                                        range: 37..43,
+                                                        node_index: NodeIndex(None),
+                                                        elements: [
+                                                            Interpolation(
+                                                                InterpolatedElement {
+                                                                    range: 39..42,
+                                                                    node_index: NodeIndex(None),
+                                                                    expression: Name(
+                                                                        ExprName {
+                                                                            node_index: NodeIndex(None),
+                                                                            range: 40..41,
+                                                                            id: Name("y"),
+                                                                            ctx: Load,
+                                                                        },
+                                                                    ),
+                                                                    debug_text: None,
+                                                                    conversion: None,
+                                                                    format_spec: None,
+                                                                },
+                                                            ),
+                                                        ],
+                                                        flags: FStringFlags {
+                                                            quote_style: Double,
+                                                            prefix: Regular,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 45..48,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 45..48,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 53..92,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 58..87,
+                                    value: FString(
+                                        ExprFString {
+                                            node_index: NodeIndex(None),
+                                            range: 58..87,
+                                            value: FStringValue {
+                                                inner: Concatenated(
+                                                    [
+                                                        Literal(
+                                                            StringLiteral {
+                                                                range: 58..71,
+                                                                node_index: NodeIndex(None),
+                                                                value: "implicitly ",
+                                                                flags: StringLiteralFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Empty,
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                        ),
+                                                        FString(
+                                                            FString {
+                                                                range: 72..87,
+                                                                node_index: NodeIndex(None),
+                                                                elements: [
+                                                                    Literal(
+                                                                        InterpolatedStringLiteralElement {
+                                                                            range: 74..86,
+                                                                            node_index: NodeIndex(None),
+                                                                            value: "concatenated",
+                                                                        },
+                                                                    ),
+                                                                ],
+                                                                flags: FStringFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Regular,
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                        ),
+                                                    ],
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 89..92,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 89..92,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 97..111,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 102..106,
+                                    value: TString(
+                                        ExprTString {
+                                            node_index: NodeIndex(None),
+                                            range: 102..106,
+                                            value: TStringValue {
+                                                inner: Single(
+                                                    TString {
+                                                        range: 102..106,
+                                                        node_index: NodeIndex(None),
+                                                        elements: [
+                                                            Literal(
+                                                                InterpolatedStringLiteralElement {
+                                                                    range: 104..105,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                },
+                                                            ),
+                                                        ],
+                                                        flags: TStringFlags {
+                                                            quote_style: Double,
+                                                            prefix: Regular,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 108..111,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 108..111,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 116..132,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 121..127,
+                                    value: TString(
+                                        ExprTString {
+                                            node_index: NodeIndex(None),
+                                            range: 121..127,
+                                            value: TStringValue {
+                                                inner: Single(
+                                                    TString {
+                                                        range: 121..127,
+                                                        node_index: NodeIndex(None),
+                                                        elements: [
+                                                            Interpolation(
+                                                                InterpolatedElement {
+                                                                    range: 123..126,
+                                                                    node_index: NodeIndex(None),
+                                                                    expression: Name(
+                                                                        ExprName {
+                                                                            node_index: NodeIndex(None),
+                                                                            range: 124..125,
+                                                                            id: Name("y"),
+                                                                            ctx: Load,
+                                                                        },
+                                                                    ),
+                                                                    debug_text: None,
+                                                                    conversion: None,
+                                                                    format_spec: None,
+                                                                },
+                                                            ),
+                                                        ],
+                                                        flags: TStringFlags {
+                                                            quote_style: Double,
+                                                            prefix: Regular,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 129..132,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 129..132,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 137..177,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 142..172,
+                                    value: TString(
+                                        ExprTString {
+                                            node_index: NodeIndex(None),
+                                            range: 142..172,
+                                            value: TStringValue {
+                                                inner: Concatenated(
+                                                    [
+                                                        TString {
+                                                            range: 142..156,
+                                                            node_index: NodeIndex(None),
+                                                            elements: [
+                                                                Literal(
+                                                                    InterpolatedStringLiteralElement {
+                                                                        range: 144..155,
+                                                                        node_index: NodeIndex(None),
+                                                                        value: "implicitly ",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            flags: TStringFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                        TString {
+                                                            range: 157..172,
+                                                            node_index: NodeIndex(None),
+                                                            elements: [
+                                                                Literal(
+                                                                    InterpolatedStringLiteralElement {
+                                                                        range: 159..171,
+                                                                        node_index: NodeIndex(None),
+                                                                        value: "concatenated",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            flags: TStringFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ],
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 174..177,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 174..177,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 182..202,
+                            node_index: NodeIndex(None),
+                            pattern: MatchOr(
+                                PatternMatchOr {
+                                    node_index: NodeIndex(None),
+                                    range: 187..197,
+                                    patterns: [
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 187..190,
+                                                value: StringLiteral(
+                                                    ExprStringLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 187..190,
+                                                        value: StringLiteralValue {
+                                                            inner: Single(
+                                                                StringLiteral {
+                                                                    range: 187..190,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 193..197,
+                                                value: FString(
+                                                    ExprFString {
+                                                        node_index: NodeIndex(None),
+                                                        range: 193..197,
+                                                        value: FStringValue {
+                                                            inner: Single(
+                                                                FString {
+                                                                    range: 193..197,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 195..196,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "x",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: FStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 199..202,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 199..202,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 207..226,
+                            node_index: NodeIndex(None),
+                            pattern: MatchAs(
+                                PatternMatchAs {
+                                    node_index: NodeIndex(None),
+                                    range: 212..221,
+                                    pattern: Some(
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 212..216,
+                                                value: FString(
+                                                    ExprFString {
+                                                        node_index: NodeIndex(None),
+                                                        range: 212..216,
+                                                        value: FStringValue {
+                                                            inner: Single(
+                                                                FString {
+                                                                    range: 212..216,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 214..215,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "x",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: FStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                    name: Some(
+                                        Identifier {
+                                            id: Name("y"),
+                                            range: 220..221,
+                                            node_index: NodeIndex(None),
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 223..226,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 223..226,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 231..259,
+                            node_index: NodeIndex(None),
+                            pattern: MatchSequence(
+                                PatternMatchSequence {
+                                    node_index: NodeIndex(None),
+                                    range: 236..254,
+                                    patterns: [
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 237..240,
+                                                value: StringLiteral(
+                                                    ExprStringLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 237..240,
+                                                        value: StringLiteralValue {
+                                                            inner: Single(
+                                                                StringLiteral {
+                                                                    range: 237..240,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 242..246,
+                                                value: FString(
+                                                    ExprFString {
+                                                        node_index: NodeIndex(None),
+                                                        range: 242..246,
+                                                        value: FStringValue {
+                                                            inner: Single(
+                                                                FString {
+                                                                    range: 242..246,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 244..245,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "x",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: FStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchStar(
+                                            PatternMatchStar {
+                                                node_index: NodeIndex(None),
+                                                range: 248..253,
+                                                name: Some(
+                                                    Identifier {
+                                                        id: Name("rest"),
+                                                        range: 249..253,
+                                                        node_index: NodeIndex(None),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 256..259,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 256..259,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 264..283,
+                            node_index: NodeIndex(None),
+                            pattern: MatchSequence(
+                                PatternMatchSequence {
+                                    node_index: NodeIndex(None),
+                                    range: 269..278,
+                                    patterns: [
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 269..272,
+                                                value: StringLiteral(
+                                                    ExprStringLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 269..272,
+                                                        value: StringLiteralValue {
+                                                            inner: Single(
+                                                                StringLiteral {
+                                                                    range: 269..272,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 274..278,
+                                                value: TString(
+                                                    ExprTString {
+                                                        node_index: NodeIndex(None),
+                                                        range: 274..278,
+                                                        value: TStringValue {
+                                                            inner: Single(
+                                                                TString {
+                                                                    range: 274..278,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 276..277,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "x",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: TStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 280..283,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 280..283,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 288..322,
+                            node_index: NodeIndex(None),
+                            pattern: MatchClass(
+                                PatternMatchClass {
+                                    node_index: NodeIndex(None),
+                                    range: 293..317,
+                                    cls: Name(
+                                        ExprName {
+                                            node_index: NodeIndex(None),
+                                            range: 293..298,
+                                            id: Name("Point"),
+                                            ctx: Load,
+                                        },
+                                    ),
+                                    arguments: PatternArguments {
+                                        range: 298..317,
+                                        node_index: NodeIndex(None),
+                                        patterns: [
+                                            MatchValue(
+                                                PatternMatchValue {
+                                                    node_index: NodeIndex(None),
+                                                    range: 299..302,
+                                                    value: StringLiteral(
+                                                        ExprStringLiteral {
+                                                            node_index: NodeIndex(None),
+                                                            range: 299..302,
+                                                            value: StringLiteralValue {
+                                                                inner: Single(
+                                                                    StringLiteral {
+                                                                        range: 299..302,
+                                                                        node_index: NodeIndex(None),
+                                                                        value: "x",
+                                                                        flags: StringLiteralFlags {
+                                                                            quote_style: Double,
+                                                                            prefix: Empty,
+                                                                            triple_quoted: false,
+                                                                            unclosed: false,
+                                                                        },
+                                                                    },
+                                                                ),
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            MatchValue(
+                                                PatternMatchValue {
+                                                    node_index: NodeIndex(None),
+                                                    range: 304..308,
+                                                    value: FString(
+                                                        ExprFString {
+                                                            node_index: NodeIndex(None),
+                                                            range: 304..308,
+                                                            value: FStringValue {
+                                                                inner: Single(
+                                                                    FString {
+                                                                        range: 304..308,
+                                                                        node_index: NodeIndex(None),
+                                                                        elements: [
+                                                                            Literal(
+                                                                                InterpolatedStringLiteralElement {
+                                                                                    range: 306..307,
+                                                                                    node_index: NodeIndex(None),
+                                                                                    value: "x",
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                        flags: FStringFlags {
+                                                                            quote_style: Double,
+                                                                            prefix: Regular,
+                                                                            triple_quoted: false,
+                                                                            unclosed: false,
+                                                                        },
+                                                                    },
+                                                                ),
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        ],
+                                        keywords: [
+                                            PatternKeyword {
+                                                range: 310..316,
+                                                node_index: NodeIndex(None),
+                                                attr: Identifier {
+                                                    id: Name("y"),
+                                                    range: 310..311,
+                                                    node_index: NodeIndex(None),
+                                                },
+                                                pattern: MatchValue(
+                                                    PatternMatchValue {
+                                                        node_index: NodeIndex(None),
+                                                        range: 312..316,
+                                                        value: TString(
+                                                            ExprTString {
+                                                                node_index: NodeIndex(None),
+                                                                range: 312..316,
+                                                                value: TStringValue {
+                                                                    inner: Single(
+                                                                        TString {
+                                                                            range: 312..316,
+                                                                            node_index: NodeIndex(None),
+                                                                            elements: [
+                                                                                Literal(
+                                                                                    InterpolatedStringLiteralElement {
+                                                                                        range: 314..315,
+                                                                                        node_index: NodeIndex(None),
+                                                                                        value: "x",
+                                                                                    },
+                                                                                ),
+                                                                            ],
+                                                                            flags: TStringFlags {
+                                                                                quote_style: Double,
+                                                                                prefix: Regular,
+                                                                                triple_quoted: false,
+                                                                                unclosed: false,
+                                                                            },
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 319..322,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 319..322,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 327..356,
+                            node_index: NodeIndex(None),
+                            pattern: MatchMapping(
+                                PatternMatchMapping {
+                                    node_index: NodeIndex(None),
+                                    range: 332..351,
+                                    keys: [
+                                        StringLiteral(
+                                            ExprStringLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 333..336,
+                                                value: StringLiteralValue {
+                                                    inner: Single(
+                                                        StringLiteral {
+                                                            range: 333..336,
+                                                            node_index: NodeIndex(None),
+                                                            value: "x",
+                                                            flags: StringLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Empty,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    patterns: [
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 338..342,
+                                                value: FString(
+                                                    ExprFString {
+                                                        node_index: NodeIndex(None),
+                                                        range: 338..342,
+                                                        value: FStringValue {
+                                                            inner: Single(
+                                                                FString {
+                                                                    range: 338..342,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 340..341,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "x",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: FStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                    rest: Some(
+                                        Identifier {
+                                            id: Name("rest"),
+                                            range: 346..350,
+                                            node_index: NodeIndex(None),
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 353..356,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 353..356,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                    ],
+                },
+            ),
+        ],
+    },
+)
+```
+## Semantic Syntax Errors
+
+  |
+1 | match x:
+2 |     case f"x": ...
+  |          ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+3 |     case f"{y}": ...
+4 |     case "implicitly " f"concatenated": ...
+  |
+
+
+  |
+1 | match x:
+2 |     case f"x": ...
+3 |     case f"{y}": ...
+  |          ^^^^^^ Syntax Error: patterns may only match literals and attribute lookups
+4 |     case "implicitly " f"concatenated": ...
+5 |     case t"x": ...
+  |
+
+
+  |
+2 |     case f"x": ...
+3 |     case f"{y}": ...
+4 |     case "implicitly " f"concatenated": ...
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Syntax Error: patterns may only match literals and attribute lookups
+5 |     case t"x": ...
+6 |     case t"{y}": ...
+  |
+
+
+  |
+3 |     case f"{y}": ...
+4 |     case "implicitly " f"concatenated": ...
+5 |     case t"x": ...
+  |          ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+6 |     case t"{y}": ...
+7 |     case t"implicitly " t"concatenated": ...
+  |
+
+
+  |
+4 |     case "implicitly " f"concatenated": ...
+5 |     case t"x": ...
+6 |     case t"{y}": ...
+  |          ^^^^^^ Syntax Error: patterns may only match literals and attribute lookups
+7 |     case t"implicitly " t"concatenated": ...
+8 |     case "x" | f"x": ...
+  |
+
+
+  |
+5 |     case t"x": ...
+6 |     case t"{y}": ...
+7 |     case t"implicitly " t"concatenated": ...
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Syntax Error: patterns may only match literals and attribute lookups
+8 |     case "x" | f"x": ...
+9 |     case f"x" as y: ...
+  |
+
+
+   |
+ 6 |     case t"{y}": ...
+ 7 |     case t"implicitly " t"concatenated": ...
+ 8 |     case "x" | f"x": ...
+   |                ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+ 9 |     case f"x" as y: ...
+10 |     case ["x", f"x", *rest]: ...
+   |
+
+
+   |
+ 7 |     case t"implicitly " t"concatenated": ...
+ 8 |     case "x" | f"x": ...
+ 9 |     case f"x" as y: ...
+   |          ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+10 |     case ["x", f"x", *rest]: ...
+11 |     case "x", t"x": ...
+   |
+
+
+   |
+ 8 |     case "x" | f"x": ...
+ 9 |     case f"x" as y: ...
+10 |     case ["x", f"x", *rest]: ...
+   |                ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+11 |     case "x", t"x": ...
+12 |     case Point("x", f"x", y=t"x"): ...
+   |
+
+
+   |
+ 9 |     case f"x" as y: ...
+10 |     case ["x", f"x", *rest]: ...
+11 |     case "x", t"x": ...
+   |               ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+12 |     case Point("x", f"x", y=t"x"): ...
+13 |     case {"x": f"x", **rest}: ...
+   |
+
+
+   |
+10 |     case ["x", f"x", *rest]: ...
+11 |     case "x", t"x": ...
+12 |     case Point("x", f"x", y=t"x"): ...
+   |                     ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+13 |     case {"x": f"x", **rest}: ...
+   |
+
+
+   |
+10 |     case ["x", f"x", *rest]: ...
+11 |     case "x", t"x": ...
+12 |     case Point("x", f"x", y=t"x"): ...
+   |                             ^^^^ Syntax Error: patterns may only match literals and attribute lookups
+13 |     case {"x": f"x", **rest}: ...
+   |
+
+
+   |
+11 |     case "x", t"x": ...
+12 |     case Point("x", f"x", y=t"x"): ...
+13 |     case {"x": f"x", **rest}: ...
+   |                ^^^^ Syntax Error: patterns may only match literals and attribute lookups

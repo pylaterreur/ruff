@@ -1406,6 +1406,15 @@ impl Display for SemanticSyntaxError {
             SemanticSyntaxErrorKind::DuplicateMatchClassAttribute(name) => {
                 write!(f, "attribute name `{name}` repeated in class pattern")
             }
+            SemanticSyntaxErrorKind::InterpolatedStringPattern(kind) => match kind {
+                // These error messages are taken from CPython's syntax errors
+                InterpolatedStringPatternKind::Literal => {
+                    f.write_str("patterns may only match literals and attribute lookups")
+                }
+                InterpolatedStringPatternKind::MappingKey => f.write_str(
+                    "mapping pattern keys may only match literals and attribute lookups",
+                ),
+            },
             SemanticSyntaxErrorKind::LoadBeforeGlobalDeclaration { name, start: _ } => {
                 write!(f, "name `{name}` is used prior to global declaration")
             }
@@ -1724,6 +1733,34 @@ pub enum SemanticSyntaxErrorKind {
     ///     case Class(x=1, x=2): ...
     /// ```
     DuplicateMatchClassAttribute(ast::name::Name),
+
+    /// Represents an f-string or a t-string used as a literal pattern or as a mapping pattern key
+    /// in a `match` statement.
+    ///
+    /// The [CPython grammar] accepts f-strings and t-strings wherever it accepts other string
+    /// literals in patterns, but the compiler rejects them because a pattern can only match a
+    /// literal or an attribute lookup:
+    ///
+    /// ```pycon
+    /// >>> match x:
+    /// ...     case f"{y}": ...
+    /// ...
+    ///   File "<python-input-0>", line 2
+    ///     case f"{y}": ...
+    ///          ^^^^^^
+    /// SyntaxError: patterns may only match literals and attribute lookups
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// ```python
+    /// match x:
+    ///     case f"{y}": ...
+    ///     case {t"{y}": _}: ...
+    /// ```
+    ///
+    /// [CPython grammar]: https://docs.python.org/3/reference/grammar.html
+    InterpolatedStringPattern(InterpolatedStringPatternKind),
 
     /// Represents the use of a `global` variable before its `global` declaration.
     ///
@@ -2064,6 +2101,15 @@ pub enum WriteToDebugKind {
     Delete(PythonVersion),
 }
 
+/// Where an f-string or a t-string is used in a `match` pattern.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, get_size2::GetSize)]
+pub enum InterpolatedStringPatternKind {
+    /// As a literal pattern, as in `case f"x": ...`.
+    Literal,
+    /// As a mapping pattern key, as in `case {f"x": _}: ...`.
+    MappingKey,
+}
+
 fn comprehension_target_names(
     comprehensions: &[ast::Comprehension],
 ) -> FxHashSet<&ast::name::Name> {
@@ -2219,7 +2265,35 @@ impl<'a, Ctx: SemanticSyntaxContext> MatchPatternVisitor<'a, Ctx> {
         // match subject:
         //     case *first, *second, *third: ...
         match pattern {
-            Pattern::MatchValue(_) | Pattern::MatchSingleton(_) => {}
+            Pattern::MatchValue(ast::PatternMatchValue { value, .. }) => {
+                // test_ok string_literal_pattern
+                // match x:
+                //     case "x": ...
+                //     case b"x": ...
+                //     case r"x" u"x": ...
+                //     case "implicitly " "concatenated": ...
+                //     case b"implicitly " b"concatenated": ...
+                //     case ["x", b"x", "a" "b"]: ...
+                //     case {"x": _, b"x": _, "a" "b": _}: ...
+                //     case Point("x", y=b"x" b"y"): ...
+
+                // test_err interpolated_string_literal_pattern
+                // match x:
+                //     case f"x": ...
+                //     case f"{y}": ...
+                //     case "implicitly " f"concatenated": ...
+                //     case t"x": ...
+                //     case t"{y}": ...
+                //     case t"implicitly " t"concatenated": ...
+                //     case "x" | f"x": ...
+                //     case f"x" as y: ...
+                //     case ["x", f"x", *rest]: ...
+                //     case "x", t"x": ...
+                //     case Point("x", f"x", y=t"x"): ...
+                //     case {"x": f"x", **rest}: ...
+                self.check_interpolated_string(value, InterpolatedStringPatternKind::Literal);
+            }
+            Pattern::MatchSingleton(_) => {}
             Pattern::MatchStar(ast::PatternMatchStar { name, .. }) => {
                 if let Some(name) = name {
                     self.insert(name);
@@ -2247,6 +2321,14 @@ impl<'a, Ctx: SemanticSyntaxContext> MatchPatternVisitor<'a, Ctx> {
                 rest,
                 ..
             }) => {
+                // test_err interpolated_string_mapping_key
+                // match x:
+                //     case {f"x": _}: ...
+                //     case {"x": _, t"{y}": _}: ...
+                //     case {"implicitly " f"concatenated": _}: ...
+                for key in keys {
+                    self.check_interpolated_string(key, InterpolatedStringPatternKind::MappingKey);
+                }
                 for pattern in patterns {
                     self.visit_pattern(pattern);
                 }
@@ -2423,6 +2505,20 @@ impl<'a, Ctx: SemanticSyntaxContext> MatchPatternVisitor<'a, Ctx> {
         // match x:
         //     case __debug__: ...
         SemanticSyntaxChecker::check_identifier(ident, self.ctx);
+    }
+
+    /// Emit a [`SemanticSyntaxError`] if `expr`, the value of a literal pattern or a mapping
+    /// pattern key, is an f-string or a t-string.
+    ///
+    /// The parser accepts these like CPython's parser does, but CPython's compiler rejects them.
+    fn check_interpolated_string(&self, expr: &Expr, kind: InterpolatedStringPatternKind) {
+        if matches!(expr, Expr::FString(_) | Expr::TString(_)) {
+            SemanticSyntaxChecker::add_error(
+                self.ctx,
+                SemanticSyntaxErrorKind::InterpolatedStringPattern(kind),
+                expr.range(),
+            );
+        }
     }
 }
 

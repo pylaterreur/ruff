@@ -1,0 +1,718 @@
+---
+source: crates/ruff_python_parser/tests/fixtures.rs
+input_file: crates/ruff_python_parser/resources/inline/ok/string_literal_pattern.py
+---
+## AST
+
+```
+Module(
+    ModModule {
+        node_index: NodeIndex(None),
+        range: 0..275,
+        body: [
+            Match(
+                StmtMatch {
+                    node_index: NodeIndex(None),
+                    range: 0..274,
+                    subject: Name(
+                        ExprName {
+                            node_index: NodeIndex(None),
+                            range: 6..7,
+                            id: Name("x"),
+                            ctx: Load,
+                        },
+                    ),
+                    cases: [
+                        MatchCase {
+                            range: 13..26,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 18..21,
+                                    value: StringLiteral(
+                                        ExprStringLiteral {
+                                            node_index: NodeIndex(None),
+                                            range: 18..21,
+                                            value: StringLiteralValue {
+                                                inner: Single(
+                                                    StringLiteral {
+                                                        range: 18..21,
+                                                        node_index: NodeIndex(None),
+                                                        value: "x",
+                                                        flags: StringLiteralFlags {
+                                                            quote_style: Double,
+                                                            prefix: Empty,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 23..26,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 23..26,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 31..45,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 36..40,
+                                    value: BytesLiteral(
+                                        ExprBytesLiteral {
+                                            node_index: NodeIndex(None),
+                                            range: 36..40,
+                                            value: BytesLiteralValue {
+                                                inner: Single(
+                                                    BytesLiteral {
+                                                        range: 36..40,
+                                                        node_index: NodeIndex(None),
+                                                        value: [
+                                                            120,
+                                                        ],
+                                                        flags: BytesLiteralFlags {
+                                                            quote_style: Double,
+                                                            prefix: Regular,
+                                                            triple_quoted: false,
+                                                            unclosed: false,
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 42..45,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 42..45,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 50..69,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 55..64,
+                                    value: StringLiteral(
+                                        ExprStringLiteral {
+                                            node_index: NodeIndex(None),
+                                            range: 55..64,
+                                            value: StringLiteralValue {
+                                                inner: Concatenated(
+                                                    ConcatenatedStringLiteral {
+                                                        strings: [
+                                                            StringLiteral {
+                                                                range: 55..59,
+                                                                node_index: NodeIndex(None),
+                                                                value: "x",
+                                                                flags: StringLiteralFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Raw {
+                                                                        uppercase: false,
+                                                                    },
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                            StringLiteral {
+                                                                range: 60..64,
+                                                                node_index: NodeIndex(None),
+                                                                value: "x",
+                                                                flags: StringLiteralFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Unicode,
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                        ],
+                                                        value: "xx",
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 66..69,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 66..69,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 74..112,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 79..107,
+                                    value: StringLiteral(
+                                        ExprStringLiteral {
+                                            node_index: NodeIndex(None),
+                                            range: 79..107,
+                                            value: StringLiteralValue {
+                                                inner: Concatenated(
+                                                    ConcatenatedStringLiteral {
+                                                        strings: [
+                                                            StringLiteral {
+                                                                range: 79..92,
+                                                                node_index: NodeIndex(None),
+                                                                value: "implicitly ",
+                                                                flags: StringLiteralFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Empty,
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                            StringLiteral {
+                                                                range: 93..107,
+                                                                node_index: NodeIndex(None),
+                                                                value: "concatenated",
+                                                                flags: StringLiteralFlags {
+                                                                    quote_style: Double,
+                                                                    prefix: Empty,
+                                                                    triple_quoted: false,
+                                                                    unclosed: false,
+                                                                },
+                                                            },
+                                                        ],
+                                                        value: "implicitly concatenated",
+                                                    },
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 109..112,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 109..112,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 117..157,
+                            node_index: NodeIndex(None),
+                            pattern: MatchValue(
+                                PatternMatchValue {
+                                    node_index: NodeIndex(None),
+                                    range: 122..152,
+                                    value: BytesLiteral(
+                                        ExprBytesLiteral {
+                                            node_index: NodeIndex(None),
+                                            range: 122..152,
+                                            value: BytesLiteralValue {
+                                                inner: Concatenated(
+                                                    [
+                                                        BytesLiteral {
+                                                            range: 122..136,
+                                                            node_index: NodeIndex(None),
+                                                            value: [
+                                                                105,
+                                                                109,
+                                                                112,
+                                                                108,
+                                                                105,
+                                                                99,
+                                                                105,
+                                                                116,
+                                                                108,
+                                                                121,
+                                                                32,
+                                                            ],
+                                                            flags: BytesLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                        BytesLiteral {
+                                                            range: 137..152,
+                                                            node_index: NodeIndex(None),
+                                                            value: [
+                                                                99,
+                                                                111,
+                                                                110,
+                                                                99,
+                                                                97,
+                                                                116,
+                                                                101,
+                                                                110,
+                                                                97,
+                                                                116,
+                                                                101,
+                                                                100,
+                                                            ],
+                                                            flags: BytesLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ],
+                                                ),
+                                            },
+                                        },
+                                    ),
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 154..157,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 154..157,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 162..192,
+                            node_index: NodeIndex(None),
+                            pattern: MatchSequence(
+                                PatternMatchSequence {
+                                    node_index: NodeIndex(None),
+                                    range: 167..187,
+                                    patterns: [
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 168..171,
+                                                value: StringLiteral(
+                                                    ExprStringLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 168..171,
+                                                        value: StringLiteralValue {
+                                                            inner: Single(
+                                                                StringLiteral {
+                                                                    range: 168..171,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "x",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 173..177,
+                                                value: BytesLiteral(
+                                                    ExprBytesLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 173..177,
+                                                        value: BytesLiteralValue {
+                                                            inner: Single(
+                                                                BytesLiteral {
+                                                                    range: 173..177,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: [
+                                                                        120,
+                                                                    ],
+                                                                    flags: BytesLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                        MatchValue(
+                                            PatternMatchValue {
+                                                node_index: NodeIndex(None),
+                                                range: 179..186,
+                                                value: StringLiteral(
+                                                    ExprStringLiteral {
+                                                        node_index: NodeIndex(None),
+                                                        range: 179..186,
+                                                        value: StringLiteralValue {
+                                                            inner: Concatenated(
+                                                                ConcatenatedStringLiteral {
+                                                                    strings: [
+                                                                        StringLiteral {
+                                                                            range: 179..182,
+                                                                            node_index: NodeIndex(None),
+                                                                            value: "a",
+                                                                            flags: StringLiteralFlags {
+                                                                                quote_style: Double,
+                                                                                prefix: Empty,
+                                                                                triple_quoted: false,
+                                                                                unclosed: false,
+                                                                            },
+                                                                        },
+                                                                        StringLiteral {
+                                                                            range: 183..186,
+                                                                            node_index: NodeIndex(None),
+                                                                            value: "b",
+                                                                            flags: StringLiteralFlags {
+                                                                                quote_style: Double,
+                                                                                prefix: Empty,
+                                                                                triple_quoted: false,
+                                                                                unclosed: false,
+                                                                            },
+                                                                        },
+                                                                    ],
+                                                                    value: "ab",
+                                                                },
+                                                            ),
+                                                        },
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 189..192,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 189..192,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 197..236,
+                            node_index: NodeIndex(None),
+                            pattern: MatchMapping(
+                                PatternMatchMapping {
+                                    node_index: NodeIndex(None),
+                                    range: 202..231,
+                                    keys: [
+                                        StringLiteral(
+                                            ExprStringLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 203..206,
+                                                value: StringLiteralValue {
+                                                    inner: Single(
+                                                        StringLiteral {
+                                                            range: 203..206,
+                                                            node_index: NodeIndex(None),
+                                                            value: "x",
+                                                            flags: StringLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Empty,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                        BytesLiteral(
+                                            ExprBytesLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 211..215,
+                                                value: BytesLiteralValue {
+                                                    inner: Single(
+                                                        BytesLiteral {
+                                                            range: 211..215,
+                                                            node_index: NodeIndex(None),
+                                                            value: [
+                                                                120,
+                                                            ],
+                                                            flags: BytesLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                        StringLiteral(
+                                            ExprStringLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 220..227,
+                                                value: StringLiteralValue {
+                                                    inner: Concatenated(
+                                                        ConcatenatedStringLiteral {
+                                                            strings: [
+                                                                StringLiteral {
+                                                                    range: 220..223,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "a",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                                StringLiteral {
+                                                                    range: 224..227,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "b",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ],
+                                                            value: "ab",
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    patterns: [
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 208..209,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 217..218,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 229..230,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                    ],
+                                    rest: None,
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 233..236,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 233..236,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 241..274,
+                            node_index: NodeIndex(None),
+                            pattern: MatchClass(
+                                PatternMatchClass {
+                                    node_index: NodeIndex(None),
+                                    range: 246..269,
+                                    cls: Name(
+                                        ExprName {
+                                            node_index: NodeIndex(None),
+                                            range: 246..251,
+                                            id: Name("Point"),
+                                            ctx: Load,
+                                        },
+                                    ),
+                                    arguments: PatternArguments {
+                                        range: 251..269,
+                                        node_index: NodeIndex(None),
+                                        patterns: [
+                                            MatchValue(
+                                                PatternMatchValue {
+                                                    node_index: NodeIndex(None),
+                                                    range: 252..255,
+                                                    value: StringLiteral(
+                                                        ExprStringLiteral {
+                                                            node_index: NodeIndex(None),
+                                                            range: 252..255,
+                                                            value: StringLiteralValue {
+                                                                inner: Single(
+                                                                    StringLiteral {
+                                                                        range: 252..255,
+                                                                        node_index: NodeIndex(None),
+                                                                        value: "x",
+                                                                        flags: StringLiteralFlags {
+                                                                            quote_style: Double,
+                                                                            prefix: Empty,
+                                                                            triple_quoted: false,
+                                                                            unclosed: false,
+                                                                        },
+                                                                    },
+                                                                ),
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        ],
+                                        keywords: [
+                                            PatternKeyword {
+                                                range: 257..268,
+                                                node_index: NodeIndex(None),
+                                                attr: Identifier {
+                                                    id: Name("y"),
+                                                    range: 257..258,
+                                                    node_index: NodeIndex(None),
+                                                },
+                                                pattern: MatchValue(
+                                                    PatternMatchValue {
+                                                        node_index: NodeIndex(None),
+                                                        range: 259..268,
+                                                        value: BytesLiteral(
+                                                            ExprBytesLiteral {
+                                                                node_index: NodeIndex(None),
+                                                                range: 259..268,
+                                                                value: BytesLiteralValue {
+                                                                    inner: Concatenated(
+                                                                        [
+                                                                            BytesLiteral {
+                                                                                range: 259..263,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: [
+                                                                                    120,
+                                                                                ],
+                                                                                flags: BytesLiteralFlags {
+                                                                                    quote_style: Double,
+                                                                                    prefix: Regular,
+                                                                                    triple_quoted: false,
+                                                                                    unclosed: false,
+                                                                                },
+                                                                            },
+                                                                            BytesLiteral {
+                                                                                range: 264..268,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: [
+                                                                                    121,
+                                                                                ],
+                                                                                flags: BytesLiteralFlags {
+                                                                                    quote_style: Double,
+                                                                                    prefix: Regular,
+                                                                                    triple_quoted: false,
+                                                                                    unclosed: false,
+                                                                                },
+                                                                            },
+                                                                        ],
+                                                                    ),
+                                                                },
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 271..274,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 271..274,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                    ],
+                },
+            ),
+        ],
+    },
+)
+```

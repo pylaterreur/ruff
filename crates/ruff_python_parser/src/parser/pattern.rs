@@ -19,6 +19,10 @@ const LITERAL_PATTERN_START_SET: TokenSet = TokenSet::new([
     TokenKind::True,
     TokenKind::False,
     TokenKind::String,
+    // F-strings and t-strings parse like other strings, as in CPython, but they are rejected as
+    // patterns by the `SemanticSyntaxChecker`.
+    TokenKind::FStringStart,
+    TokenKind::TStringStart,
     TokenKind::Int,
     TokenKind::Float,
     TokenKind::Complex,

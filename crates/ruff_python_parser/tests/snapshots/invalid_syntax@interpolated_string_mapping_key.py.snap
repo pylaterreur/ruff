@@ -1,0 +1,314 @@
+---
+source: crates/ruff_python_parser/tests/fixtures.rs
+input_file: crates/ruff_python_parser/resources/inline/err/interpolated_string_mapping_key.py
+---
+## AST
+
+```
+Module(
+    ModModule {
+        node_index: NodeIndex(None),
+        range: 0..116,
+        body: [
+            Match(
+                StmtMatch {
+                    node_index: NodeIndex(None),
+                    range: 0..115,
+                    subject: Name(
+                        ExprName {
+                            node_index: NodeIndex(None),
+                            range: 6..7,
+                            id: Name("x"),
+                            ctx: Load,
+                        },
+                    ),
+                    cases: [
+                        MatchCase {
+                            range: 13..32,
+                            node_index: NodeIndex(None),
+                            pattern: MatchMapping(
+                                PatternMatchMapping {
+                                    node_index: NodeIndex(None),
+                                    range: 18..27,
+                                    keys: [
+                                        FString(
+                                            ExprFString {
+                                                node_index: NodeIndex(None),
+                                                range: 19..23,
+                                                value: FStringValue {
+                                                    inner: Single(
+                                                        FString {
+                                                            range: 19..23,
+                                                            node_index: NodeIndex(None),
+                                                            elements: [
+                                                                Literal(
+                                                                    InterpolatedStringLiteralElement {
+                                                                        range: 21..22,
+                                                                        node_index: NodeIndex(None),
+                                                                        value: "x",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            flags: FStringFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    patterns: [
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 25..26,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                    ],
+                                    rest: None,
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 29..32,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 29..32,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 37..66,
+                            node_index: NodeIndex(None),
+                            pattern: MatchMapping(
+                                PatternMatchMapping {
+                                    node_index: NodeIndex(None),
+                                    range: 42..61,
+                                    keys: [
+                                        StringLiteral(
+                                            ExprStringLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 43..46,
+                                                value: StringLiteralValue {
+                                                    inner: Single(
+                                                        StringLiteral {
+                                                            range: 43..46,
+                                                            node_index: NodeIndex(None),
+                                                            value: "x",
+                                                            flags: StringLiteralFlags {
+                                                                quote_style: Double,
+                                                                prefix: Empty,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                        TString(
+                                            ExprTString {
+                                                node_index: NodeIndex(None),
+                                                range: 51..57,
+                                                value: TStringValue {
+                                                    inner: Single(
+                                                        TString {
+                                                            range: 51..57,
+                                                            node_index: NodeIndex(None),
+                                                            elements: [
+                                                                Interpolation(
+                                                                    InterpolatedElement {
+                                                                        range: 53..56,
+                                                                        node_index: NodeIndex(None),
+                                                                        expression: Name(
+                                                                            ExprName {
+                                                                                node_index: NodeIndex(None),
+                                                                                range: 54..55,
+                                                                                id: Name("y"),
+                                                                                ctx: Load,
+                                                                            },
+                                                                        ),
+                                                                        debug_text: None,
+                                                                        conversion: None,
+                                                                        format_spec: None,
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            flags: TStringFlags {
+                                                                quote_style: Double,
+                                                                prefix: Regular,
+                                                                triple_quoted: false,
+                                                                unclosed: false,
+                                                            },
+                                                        },
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    patterns: [
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 48..49,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 59..60,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                    ],
+                                    rest: None,
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 63..66,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 63..66,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                        MatchCase {
+                            range: 71..115,
+                            node_index: NodeIndex(None),
+                            pattern: MatchMapping(
+                                PatternMatchMapping {
+                                    node_index: NodeIndex(None),
+                                    range: 76..110,
+                                    keys: [
+                                        FString(
+                                            ExprFString {
+                                                node_index: NodeIndex(None),
+                                                range: 77..106,
+                                                value: FStringValue {
+                                                    inner: Concatenated(
+                                                        [
+                                                            Literal(
+                                                                StringLiteral {
+                                                                    range: 77..90,
+                                                                    node_index: NodeIndex(None),
+                                                                    value: "implicitly ",
+                                                                    flags: StringLiteralFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Empty,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                            FString(
+                                                                FString {
+                                                                    range: 91..106,
+                                                                    node_index: NodeIndex(None),
+                                                                    elements: [
+                                                                        Literal(
+                                                                            InterpolatedStringLiteralElement {
+                                                                                range: 93..105,
+                                                                                node_index: NodeIndex(None),
+                                                                                value: "concatenated",
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    flags: FStringFlags {
+                                                                        quote_style: Double,
+                                                                        prefix: Regular,
+                                                                        triple_quoted: false,
+                                                                        unclosed: false,
+                                                                    },
+                                                                },
+                                                            ),
+                                                        ],
+                                                    ),
+                                                },
+                                            },
+                                        ),
+                                    ],
+                                    patterns: [
+                                        MatchAs(
+                                            PatternMatchAs {
+                                                node_index: NodeIndex(None),
+                                                range: 108..109,
+                                                pattern: None,
+                                                name: None,
+                                            },
+                                        ),
+                                    ],
+                                    rest: None,
+                                },
+                            ),
+                            guard: None,
+                            body: [
+                                Expr(
+                                    StmtExpr {
+                                        node_index: NodeIndex(None),
+                                        range: 112..115,
+                                        value: EllipsisLiteral(
+                                            ExprEllipsisLiteral {
+                                                node_index: NodeIndex(None),
+                                                range: 112..115,
+                                            },
+                                        ),
+                                    },
+                                ),
+                            ],
+                        },
+                    ],
+                },
+            ),
+        ],
+    },
+)
+```
+## Semantic Syntax Errors
+
+  |
+1 | match x:
+2 |     case {f"x": _}: ...
+  |           ^^^^ Syntax Error: mapping pattern keys may only match literals and attribute lookups
+3 |     case {"x": _, t"{y}": _}: ...
+4 |     case {"implicitly " f"concatenated": _}: ...
+  |
+
+
+  |
+1 | match x:
+2 |     case {f"x": _}: ...
+3 |     case {"x": _, t"{y}": _}: ...
+  |                   ^^^^^^ Syntax Error: mapping pattern keys may only match literals and attribute lookups
+4 |     case {"implicitly " f"concatenated": _}: ...
+  |
+
+
+  |
+2 |     case {f"x": _}: ...
+3 |     case {"x": _, t"{y}": _}: ...
+4 |     case {"implicitly " f"concatenated": _}: ...
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Syntax Error: mapping pattern keys may only match literals and attribute lookups

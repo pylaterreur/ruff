@@ -163,10 +163,6 @@ match w := x,:
     case y as v,:
         z = 0
 
-match x:
-    # F-strings aren't allowed as patterns but it's a soft syntax error in Python.
-    case f"{y}":
-        pass
 match {"test": 1}:
     case {
         **rest,
