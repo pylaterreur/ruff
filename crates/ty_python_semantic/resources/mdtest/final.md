@@ -294,6 +294,32 @@ class ChildOfBad(Bad):
     i = None  # error: [override-of-final-method]
 ```
 
+## Methods wrapped by other decorators
+
+A decorator can replace a `@final` method with an object that doesn't record the `@final` decorator,
+such as the `_lru_cache_wrapper` returned by `functools.lru_cache`. Overriding the method is still
+prohibited, wherever `@final` appears in the list of decorators. mypy and pyright also report these
+overrides.
+
+```py
+from functools import cache, lru_cache
+from typing import final
+
+class Parent:
+    @lru_cache
+    @final
+    def method1(self, x: int) -> None: ...
+    @final
+    @cache
+    def method2(self) -> None: ...
+
+class Child(Parent):
+    @lru_cache
+    def method1(self, x: int) -> None: ...  # TODO: should emit [override-of-final-method]
+    @cache
+    def method2(self) -> None: ...  # TODO: should emit [override-of-final-method]
+```
+
 ## Edge case: the function is decorated with `@final` but originally defined elsewhere
 
 As of 2025-11-26, pyrefly emits a diagnostic on this, but mypy and pyright do not. For mypy and
@@ -649,6 +675,28 @@ class Child(Parent):
         # but the definitions that override them are unreachable
         def spam(self) -> None: ...
         def baaaaar(self) -> None: ...
+```
+
+This also applies to methods wrapped by other decorators:
+
+```py
+from functools import lru_cache
+
+class CachedParent:
+    if sys.version_info >= (3, 10):
+        @lru_cache
+        def method(self) -> None: ...
+
+    else:
+        @lru_cache
+        @final
+        def method(self) -> None: ...
+
+class CachedChild(CachedParent):
+    # The `@final` definition on `CachedParent` is not reachable,
+    # so this is fine
+    @lru_cache
+    def method(self) -> None: ...
 ```
 
 ## Overloads in statically-known branches in stub files
