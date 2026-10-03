@@ -380,6 +380,69 @@ def _(x: bool, y: bool):
         reveal_type(y)  # revealed: bool
 ```
 
+The negation of `None is x is None` is `None is not x or x is not None`, and both arms narrow `x`:
+
+```py
+def _(x: int | None):
+    if None is x is None:
+        reveal_type(x)  # revealed: None
+    else:
+        # TODO: should be `int`
+        reveal_type(x)  # revealed: int | None
+```
+
+mypy infers `int` in the `else` branch. pyright doesn't narrow chained comparisons.
+
+## Assignment expressions in chained comparisons
+
+`a is b is c` is evaluated like `a is b and b is c`, so `c` is only evaluated if `a is b`. When `c`
+reassigns a name, each comparison narrows the binding that exists when it runs. In the `else`
+branch, either the first comparison failed and the second assignment never ran, or the second
+comparison failed.
+
+```py
+def f() -> int | None: ...
+def g() -> str | None: ...
+def _():
+    if (x := f()) is None is (x := f()):
+        reveal_type(x)  # revealed: None
+    else:
+        # TODO: should be `int`
+        reveal_type(x)  # revealed: int | None
+
+def _():
+    if (x := g()) is None is (x := f()):
+        reveal_type(x)  # revealed: None
+    else:
+        # TODO: should be `str | int`
+        reveal_type(x)  # revealed: int | None
+```
+
+In the `if` branch, the first comparison narrows the first binding, which the second assignment then
+replaces:
+
+```py
+def _():
+    if (x := f()) is None is not (x := f()):
+        # TODO: should be `int`
+        reveal_type(x)  # revealed: Never
+    else:
+        reveal_type(x)  # revealed: int | None
+
+class C:
+    a: int | None
+
+def _(c: C):
+    if c.a is None is not (c := C()).a:
+        # TODO: should be `int`
+        reveal_type(c.a)  # revealed: Never
+    else:
+        reveal_type(c.a)  # revealed: int | None
+```
+
+mypy infers `int` in the `else` branch of the first example, but considers the `if` branches of the
+last two examples unreachable.
+
 ## `is` in elif clause
 
 ```py

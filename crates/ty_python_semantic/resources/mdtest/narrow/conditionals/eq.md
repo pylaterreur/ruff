@@ -1875,6 +1875,24 @@ def _(x: Literal[1], y: Literal[1, 2]):
         reveal_type(y)  # revealed: Literal[2]
 ```
 
+## `==` in chained comparisons
+
+`x == y == 1` is evaluated like `x == y and y == 1`. Its negation is `x != y or y != 1`, and both
+arms narrow `y`:
+
+```py
+from typing import Literal
+
+def _(x: Literal[1], y: Literal[1, 2]):
+    if x == y == 1:
+        reveal_type(y)  # revealed: Literal[1]
+    else:
+        # TODO: should be `Literal[2]`
+        reveal_type(y)  # revealed: Literal[1, 2]
+```
+
+mypy infers `Literal[2]` in the `else` branch. pyright doesn't narrow chained comparisons.
+
 ## Assignment expressions
 
 ```py

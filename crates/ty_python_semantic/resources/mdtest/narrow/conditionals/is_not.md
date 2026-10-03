@@ -139,6 +139,19 @@ def _(x_flag: bool, y_flag: bool):
         reveal_type(y)  # revealed: bool
 ```
 
+The negation of `None is not x is not None` is `None is x or x is None`, and both arms narrow `x`:
+
+```py
+def _(x: int | None):
+    if None is not x is not None:
+        reveal_type(x)  # revealed: int
+    else:
+        # TODO: should be `None`
+        reveal_type(x)  # revealed: int | None
+```
+
+mypy infers `None` in the `else` branch. pyright doesn't narrow chained comparisons.
+
 ## `is not` with two narrowable operands
 
 Both operands should be narrowed when both are narrowable expressions.

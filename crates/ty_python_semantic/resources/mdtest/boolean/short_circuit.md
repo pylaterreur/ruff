@@ -193,6 +193,50 @@ def comprehension_filter(flag: bool):
     [reveal_type(x) for _ in range(1) if flag and (x := 1)]  # revealed: Literal[1]
 ```
 
+## Assignments in chained comparisons
+
+A comparison chain such as `a < b < c` is evaluated like `a < b and b < c`, except that `b` is only
+evaluated once. If a comparison is false, the operands after it are not evaluated, so assignments in
+them do not happen.
+
+```py
+def _(a: int):
+    (x := 1) < a < (x := 2)
+    # TODO: should be `Literal[1, 2]`
+    reveal_type(x)  # revealed: Literal[2]
+
+def _(a: int, b: int, c: int):
+    a < (x := 1) < b < (x := 2) < c
+    # TODO: should be `Literal[1, 2]`
+    reveal_type(x)  # revealed: Literal[2]
+
+def _(a: int, b: int):
+    a < b < (x := 1)
+    # TODO: should emit [possibly-unresolved-reference]
+    reveal_type(x)  # revealed: Literal[1]
+
+def _(a: int, b: int):
+    if a < b < (x := 1):
+        reveal_type(x)  # revealed: Literal[1]
+    else:
+        # TODO: should emit [possibly-unresolved-reference]
+        reveal_type(x)  # revealed: Literal[1]
+
+def _(a: int, b: int):
+    if not (a < b < (x := 1)):
+        # TODO: should emit [possibly-unresolved-reference]
+        reveal_type(x)  # revealed: Literal[1]
+    else:
+        reveal_type(x)  # revealed: Literal[1]
+
+def _(a: int, b: int):
+    # TODO: should emit [possibly-unresolved-reference]
+    (a < b < (x := 1)) or reveal_type(x)  # revealed: Literal[1]
+```
+
+pyright reports `x` as possibly unbound after `a < b and (x := 1)`, but not after
+`a < b < (x := 1)`.
+
 ## Reachability of compound conditions
 
 An `and` condition with an always-falsy operand cannot ever take the truthy branch. Similarly, an
