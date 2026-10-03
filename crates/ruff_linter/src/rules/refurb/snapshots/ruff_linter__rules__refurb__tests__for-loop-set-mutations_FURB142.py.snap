@@ -2,397 +2,334 @@
 source: crates/ruff_linter/src/rules/refurb/mod.rs
 ---
 FURB142 [*] Use of `set.add()` in a for loop
- --> FURB142.py:5:1
+ --> FURB142.py:7:5
   |
-3 |   s = set()
-4 |
-5 | / for x in [1, 2, 3]:
-6 | |     s.add(x)
-  | |____________^
-7 |
-8 |   for x in {1, 2, 3}:
-  |
+6 |   def _():
+7 | /     for x in [1, 2, 3]:
+8 | |         s.add(x)
+  | |________________^
 help: Replace with `.update()`
   |
-4 |
-  - for x in [1, 2, 3]:
-  -     s.add(x)
-5 + s.update([1, 2, 3])
-6 |
+6 | def _():
+  -     for x in [1, 2, 3]:
+  -         s.add(x)
+7 +     s.update([1, 2, 3])
+8 |
   |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:8:1
+  --> FURB142.py:12:5
    |
- 6 |       s.add(x)
- 7 |
- 8 | / for x in {1, 2, 3}:
- 9 | |     s.add(x)
-   | |____________^
-10 |
-11 |   for x in (1, 2, 3):
-   |
-help: Replace with `.update()`
-  |
-7 |
-  - for x in {1, 2, 3}:
-  -     s.add(x)
-8 + s.update({1, 2, 3})
-9 |
-  |
-
-FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:11:1
-   |
- 9 |       s.add(x)
-10 |
-11 | / for x in (1, 2, 3):
-12 | |     s.add(x)
-   | |____________^
-13 |
-14 |   for x in (1, 2, 3):
-   |
-help: Replace with `.update()`
-   |
-10 |
-   - for x in (1, 2, 3):
-   -     s.add(x)
-11 + s.update((1, 2, 3))
-12 |
-   |
-
-FURB142 [*] Use of `set.discard()` in a for loop
-  --> FURB142.py:14:1
-   |
-12 |       s.add(x)
-13 |
-14 | / for x in (1, 2, 3):
-15 | |     s.discard(x)
+11 |   def _():
+12 | /     for x in {1, 2, 3}:
+13 | |         s.add(x)
    | |________________^
-16 |
-17 |   for x in (1, 2, 3):
+help: Replace with `.update()`
    |
-help: Replace with `.difference_update()`
-   |
+11 | def _():
+   -     for x in {1, 2, 3}:
+   -         s.add(x)
+12 +     s.update({1, 2, 3})
 13 |
-   - for x in (1, 2, 3):
-   -     s.discard(x)
-14 + s.difference_update((1, 2, 3))
-15 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:17:1
+  --> FURB142.py:17:5
    |
-15 |       s.discard(x)
-16 |
-17 | / for x in (1, 2, 3):
-18 | |     s.add(x + 1)
+16 |   def _():
+17 | /     for x in (1, 2, 3):
+18 | |         s.add(x)
    | |________________^
-19 |
-20 |   for x, y in ((1, 2), (3, 4)):
-   |
 help: Replace with `.update()`
    |
-16 |
-   - for x in (1, 2, 3):
-   -     s.add(x + 1)
-17 + s.update(x + 1 for x in (1, 2, 3))
+16 | def _():
+   -     for x in (1, 2, 3):
+   -         s.add(x)
+17 +     s.update((1, 2, 3))
 18 |
    |
 
-FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:20:1
+FURB142 [*] Use of `set.discard()` in a for loop
+  --> FURB142.py:22:5
    |
-18 |       s.add(x + 1)
-19 |
-20 | / for x, y in ((1, 2), (3, 4)):
-21 | |     s.add((x, y))
-   | |_________________^
-22 |
-23 |   num = 123
+21 |   def _():
+22 | /     for x in (1, 2, 3):
+23 | |         s.discard(x)
+   | |____________________^
+help: Replace with `.difference_update()`
    |
-help: Replace with `.update()`
-   |
-19 |
-   - for x, y in ((1, 2), (3, 4)):
-   -     s.add((x, y))
-20 + s.update((x, y) for x, y in ((1, 2), (3, 4)))
-21 |
+21 | def _():
+   -     for x in (1, 2, 3):
+   -         s.discard(x)
+22 +     s.difference_update((1, 2, 3))
+23 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:25:1
+  --> FURB142.py:27:5
    |
-23 |   num = 123
-24 |
-25 | / for x in (1, 2, 3):
-26 | |     s.add(num)
-   | |______________^
-27 |
-28 |   for x in (1, 2, 3):
-   |
+26 |   def _():
+27 | /     for x in (1, 2, 3):
+28 | |         s.add(x + 1)
+   | |____________________^
 help: Replace with `.update()`
    |
-24 |
-   - for x in (1, 2, 3):
-   -     s.add(num)
-25 + s.update(num for x in (1, 2, 3))
-26 |
+26 | def _():
+   -     for x in (1, 2, 3):
+   -         s.add(x + 1)
+27 +     s.update(x + 1 for x in (1, 2, 3))
+28 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:28:1
+  --> FURB142.py:32:5
    |
-26 |       s.add(num)
-27 |
-28 | / for x in (1, 2, 3):
-29 | |     s.add((num, x))
-   | |___________________^
-30 |
-31 |   for x in (1, 2, 3):
-   |
+31 |   def _():
+32 | /     for x, y in ((1, 2), (3, 4)):
+33 | |         s.add((x, y))
+   | |_____________________^
 help: Replace with `.update()`
    |
-27 |
-   - for x in (1, 2, 3):
-   -     s.add((num, x))
-28 + s.update((num, x) for x in (1, 2, 3))
-29 |
-   |
-
-FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:31:1
-   |
-29 |       s.add((num, x))
-30 |
-31 | / for x in (1, 2, 3):
-32 | |     s.add(x + num)
-   | |__________________^
+31 | def _():
+   -     for x, y in ((1, 2), (3, 4)):
+   -         s.add((x, y))
+32 +     s.update((x, y) for x, y in ((1, 2), (3, 4)))
 33 |
-34 |   # https://github.com/astral-sh/ruff/issues/15936
-   |
-help: Replace with `.update()`
-   |
-30 |
-   - for x in (1, 2, 3):
-   -     s.add(x + num)
-31 + s.update(x + num for x in (1, 2, 3))
-32 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:35:1
+  --> FURB142.py:40:5
    |
-34 |   # https://github.com/astral-sh/ruff/issues/15936
-35 | / for x in 1, 2, 3:
-36 | |     s.add(x)
-   | |____________^
-37 |
-38 |   for x in 1, 2, 3:
-   |
+39 |   def _():
+40 | /     for x in (1, 2, 3):
+41 | |         s.add(num)
+   | |__________________^
 help: Replace with `.update()`
    |
-34 | # https://github.com/astral-sh/ruff/issues/15936
-   - for x in 1, 2, 3:
-   -     s.add(x)
-35 + s.update((1, 2, 3))
-36 |
+39 | def _():
+   -     for x in (1, 2, 3):
+   -         s.add(num)
+40 +     s.update(num for x in (1, 2, 3))
+41 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:38:1
+  --> FURB142.py:45:5
    |
-36 |       s.add(x)
-37 |
-38 | / for x in 1, 2, 3:
-39 | |     s.add(f"{x}")
-   | |_________________^
-40 |
-41 |   for x in (
-   |
+44 |   def _():
+45 | /     for x in (1, 2, 3):
+46 | |         s.add((num, x))
+   | |_______________________^
 help: Replace with `.update()`
    |
-37 |
-   - for x in 1, 2, 3:
-   -     s.add(f"{x}")
-38 + s.update(f"{x}" for x in (1, 2, 3))
-39 |
+44 | def _():
+   -     for x in (1, 2, 3):
+   -         s.add((num, x))
+45 +     s.update((num, x) for x in (1, 2, 3))
+46 |
    |
 
 FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:41:1
+  --> FURB142.py:50:5
    |
-39 |       s.add(f"{x}")
-40 |
-41 | / for x in (
-42 | |     1,  # Comment
-43 | |     2, 3
-44 | | ):
-45 | |     s.add(f"{x}")
-   | |_________________^
+49 |   def _():
+50 | /     for x in (1, 2, 3):
+51 | |         s.add(x + num)
+   | |______________________^
 help: Replace with `.update()`
    |
-40 |
-   - for x in (
-41 + s.update(f"{x}" for x in (
-42 |     1,  # Comment
-43 |     2, 3
-   - ):
-   -     s.add(f"{x}")
-44 + ))
-45 |
+49 | def _():
+   -     for x in (1, 2, 3):
+   -         s.add(x + num)
+50 +     s.update(x + num for x in (1, 2, 3))
+51 |
+   |
+
+FURB142 [*] Use of `set.add()` in a for loop
+  --> FURB142.py:56:5
+   |
+54 |   # https://github.com/astral-sh/ruff/issues/15936
+55 |   def _():
+56 | /     for x in 1, 2, 3:
+57 | |         s.add(x)
+   | |________________^
+help: Replace with `.update()`
+   |
+55 | def _():
+   -     for x in 1, 2, 3:
+   -         s.add(x)
+56 +     s.update((1, 2, 3))
+57 |
+   |
+
+FURB142 [*] Use of `set.add()` in a for loop
+  --> FURB142.py:61:5
+   |
+60 |   def _():
+61 | /     for x in 1, 2, 3:
+62 | |         s.add(f"{x}")
+   | |_____________________^
+help: Replace with `.update()`
+   |
+60 | def _():
+   -     for x in 1, 2, 3:
+   -         s.add(f"{x}")
+61 +     s.update(f"{x}" for x in (1, 2, 3))
+62 |
+   |
+
+FURB142 [*] Use of `set.add()` in a for loop
+  --> FURB142.py:66:5
+   |
+65 |   def _():
+66 | /     for x in (
+67 | |         1,  # Comment
+68 | |         2, 3
+69 | |     ):
+70 | |         s.add(f"{x}")
+   | |_____________________^
+help: Replace with `.update()`
+   |
+65 | def _():
+   -     for x in (
+66 +     s.update(f"{x}" for x in (
+67 |         1,  # Comment
+68 |         2, 3
+   -     ):
+   -         s.add(f"{x}")
+69 +     ))
+70 |
    |
 note: This is an unsafe fix and may change runtime behavior
 
 FURB142 [*] Use of `set.discard()` in a for loop
-  --> FURB142.py:83:1
-   |
-81 |   s = set()
-82 |
-83 | / for x in lambda: 0:
-84 | |     s.discard(-x)
-   | |_________________^
-85 |
-86 |   for x in (1,) if True else (2,):
-   |
-help: Replace with `.difference_update()`
-   |
-82 |
-   - for x in lambda: 0:
-   -     s.discard(-x)
-83 + s.difference_update(-x for x in (lambda: 0))
-84 |
-   |
-
-FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:86:1
-   |
-84 |       s.discard(-x)
-85 |
-86 | / for x in (1,) if True else (2,):
-87 | |     s.add(-x)
-   | |_____________^
-88 |
-89 |   # don't add extra parens
-   |
-help: Replace with `.update()`
-   |
-85 |
-   - for x in (1,) if True else (2,):
-   -     s.add(-x)
-86 + s.update(-x for x in ((1,) if True else (2,)))
-87 |
-   |
-
-FURB142 [*] Use of `set.discard()` in a for loop
-  --> FURB142.py:90:1
-   |
-89 |   # don't add extra parens
-90 | / for x in (lambda: 0):
-91 | |     s.discard(-x)
-   | |_________________^
-92 |
-93 |   for x in ((1,) if True else (2,)):
-   |
-help: Replace with `.difference_update()`
-   |
-89 | # don't add extra parens
-   - for x in (lambda: 0):
-   -     s.discard(-x)
-90 + s.difference_update(-x for x in (lambda: 0))
-91 |
-   |
-
-FURB142 [*] Use of `set.add()` in a for loop
-  --> FURB142.py:93:1
-   |
-91 |       s.discard(-x)
-92 |
-93 | / for x in ((1,) if True else (2,)):
-94 | |     s.add(-x)
-   | |_____________^
-95 |
-96 |   # don't add parens directly in function call
-   |
-help: Replace with `.update()`
-   |
-92 |
-   - for x in ((1,) if True else (2,)):
-   -     s.add(-x)
-93 + s.update(-x for x in ((1,) if True else (2,)))
-94 |
-   |
-
-FURB142 [*] Use of `set.discard()` in a for loop
-   --> FURB142.py:97:1
+   --> FURB142.py:113:5
     |
- 96 |   # don't add parens directly in function call
- 97 | / for x in lambda: 0:
- 98 | |     s.discard(x)
+112 |   def _():
+113 | /     for x in lambda: 0:
+114 | |         s.discard(-x)
+    | |_____________________^
+help: Replace with `.difference_update()`
+    |
+112 | def _():
+    -     for x in lambda: 0:
+    -         s.discard(-x)
+113 +     s.difference_update(-x for x in (lambda: 0))
+114 |
+    |
+
+FURB142 [*] Use of `set.add()` in a for loop
+   --> FURB142.py:118:5
+    |
+117 |   def _():
+118 | /     for x in (1,) if True else (2,):
+119 | |         s.add(-x)
+    | |_________________^
+help: Replace with `.update()`
+    |
+117 | def _():
+    -     for x in (1,) if True else (2,):
+    -         s.add(-x)
+118 +     s.update(-x for x in ((1,) if True else (2,)))
+119 |
+    |
+
+FURB142 [*] Use of `set.discard()` in a for loop
+   --> FURB142.py:124:5
+    |
+122 |   # don't add extra parens
+123 |   def _():
+124 | /     for x in (lambda: 0):
+125 | |         s.discard(-x)
+    | |_____________________^
+help: Replace with `.difference_update()`
+    |
+123 | def _():
+    -     for x in (lambda: 0):
+    -         s.discard(-x)
+124 +     s.difference_update(-x for x in (lambda: 0))
+125 |
+    |
+
+FURB142 [*] Use of `set.add()` in a for loop
+   --> FURB142.py:129:5
+    |
+128 |   def _():
+129 | /     for x in ((1,) if True else (2,)):
+130 | |         s.add(-x)
+    | |_________________^
+help: Replace with `.update()`
+    |
+128 | def _():
+    -     for x in ((1,) if True else (2,)):
+    -         s.add(-x)
+129 +     s.update(-x for x in ((1,) if True else (2,)))
+130 |
+    |
+
+FURB142 [*] Use of `set.discard()` in a for loop
+   --> FURB142.py:135:5
+    |
+133 |   # don't add parens directly in function call
+134 |   def _():
+135 | /     for x in lambda: 0:
+136 | |         s.discard(x)
+    | |____________________^
+help: Replace with `.difference_update()`
+    |
+134 | def _():
+    -     for x in lambda: 0:
+    -         s.discard(x)
+135 +     s.difference_update(lambda: 0)
+136 |
+    |
+
+FURB142 [*] Use of `set.add()` in a for loop
+   --> FURB142.py:140:5
+    |
+139 |   def _():
+140 | /     for x in (1,) if True else (2,):
+141 | |         s.add(x)
     | |________________^
- 99 |
-100 |   for x in (1,) if True else (2,):
-    |
-help: Replace with `.difference_update()`
-   |
-96 | # don't add parens directly in function call
-   - for x in lambda: 0:
-   -     s.discard(x)
-97 + s.difference_update(lambda: 0)
-98 |
-   |
-
-FURB142 [*] Use of `set.add()` in a for loop
-   --> FURB142.py:100:1
-    |
- 98 |       s.discard(x)
- 99 |
-100 | / for x in (1,) if True else (2,):
-101 | |     s.add(x)
-    | |____________^
-102 |
-103 |   # https://github.com/astral-sh/ruff/issues/21098
-    |
 help: Replace with `.update()`
     |
-99  |
-    - for x in (1,) if True else (2,):
-    -     s.add(x)
-100 + s.update((1,) if True else (2,))
-101 |
+139 | def _():
+    -     for x in (1,) if True else (2,):
+    -         s.add(x)
+140 +     s.update((1,) if True else (2,))
+141 |
     |
 
 FURB142 [*] Use of `set.add()` in a for loop
-   --> FURB142.py:104:1
+   --> FURB142.py:146:5
     |
-103 |   # https://github.com/astral-sh/ruff/issues/21098
-104 | / for x in ("abc", "def"):
-105 | |     s.add(c for c in x)
-    | |_______________________^
-106 |
-107 |   # don't add extra parens for already parenthesized generators
-    |
+144 |   # https://github.com/astral-sh/ruff/issues/21098
+145 |   def _():
+146 | /     for x in ("abc", "def"):
+147 | |         s.add(c for c in x)
+    | |___________________________^
 help: Replace with `.update()`
     |
-103 | # https://github.com/astral-sh/ruff/issues/21098
-    - for x in ("abc", "def"):
-    -     s.add(c for c in x)
-104 + s.update((c for c in x) for x in ("abc", "def"))
-105 |
+145 | def _():
+    -     for x in ("abc", "def"):
+    -         s.add(c for c in x)
+146 +     s.update((c for c in x) for x in ("abc", "def"))
+147 |
     |
 
 FURB142 [*] Use of `set.add()` in a for loop
-   --> FURB142.py:108:1
+   --> FURB142.py:152:5
     |
-107 |   # don't add extra parens for already parenthesized generators
-108 | / for x in ("abc", "def"):
-109 | |     s.add((c for c in x))
-    | |_________________________^
+150 |   # don't add extra parens for already parenthesized generators
+151 |   def _():
+152 | /     for x in ("abc", "def"):
+153 | |         s.add((c for c in x))
+    | |_____________________________^
 help: Replace with `.update()`
     |
-107 | # don't add extra parens for already parenthesized generators
-    - for x in ("abc", "def"):
-    -     s.add((c for c in x))
-108 + s.update((c for c in x) for x in ("abc", "def"))
+151 | def _():
+    -     for x in ("abc", "def"):
+    -         s.add((c for c in x))
+152 +     s.update((c for c in x) for x in ("abc", "def"))
+153 |
     |

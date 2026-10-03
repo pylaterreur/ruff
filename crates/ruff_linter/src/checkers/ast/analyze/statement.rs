@@ -1327,7 +1327,7 @@ pub(crate) fn statement(stmt: &Stmt, checker: &mut Checker) {
                     perflint::rules::try_except_in_loop(checker, body);
                 }
                 if checker.is_rule_enabled(Rule::ForLoopSetMutations) {
-                    refurb::rules::for_loop_set_mutations(checker, for_stmt);
+                    refurb::rules::for_loop_set_mutations_stmt(checker, for_stmt);
                 }
                 if checker.is_rule_enabled(Rule::ForLoopWrites) {
                     refurb::rules::for_loop_writes_stmt(checker, for_stmt);

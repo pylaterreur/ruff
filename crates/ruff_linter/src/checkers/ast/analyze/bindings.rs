@@ -23,6 +23,7 @@ pub(crate) fn bindings(checker: &Checker) {
         Rule::UsedDummyVariable,
         Rule::PytestUnittestRaisesAssertion,
         Rule::ForLoopWrites,
+        Rule::ForLoopSetMutations,
         Rule::CustomTypeVarForSelf,
         Rule::PrivateTypeParameter,
         Rule::UnnecessaryAssign,
@@ -108,6 +109,9 @@ pub(crate) fn bindings(checker: &Checker) {
         }
         if checker.is_rule_enabled(Rule::ForLoopWrites) {
             refurb::rules::for_loop_writes_binding(checker, binding);
+        }
+        if checker.is_rule_enabled(Rule::ForLoopSetMutations) {
+            refurb::rules::for_loop_set_mutations_binding(checker, binding);
         }
         if checker.is_rule_enabled(Rule::CustomTypeVarForSelf) {
             flake8_pyi::rules::custom_type_var_instead_of_self(checker, binding);

@@ -1,10 +1,14 @@
 use ruff_macros::{ViolationMetadata, derive_message_formats};
-use ruff_python_ast::{Expr, Stmt, StmtFor};
+use ruff_python_ast::{Expr, ExprName, Stmt, StmtFor};
 use ruff_python_semantic::analyze::typing;
+use ruff_python_semantic::{Binding, ScopeId};
+use ruff_text_size::Ranged;
 
 use crate::checkers::ast::Checker;
 use crate::codes::Category;
-use crate::rules::refurb::helpers::IterLocation;
+use crate::rules::refurb::helpers::{
+    IterLocation, binding_names, loop_variables_are_used_outside_loop,
+};
 use crate::{AlwaysFixableViolation, Applicability, Edit, Fix};
 
 use crate::rules::refurb::helpers::parenthesize_loop_iter_if_necessary;
@@ -63,7 +67,55 @@ impl AlwaysFixableViolation for ForLoopSetMutations {
 }
 
 /// FURB142
-pub(crate) fn for_loop_set_mutations(checker: &Checker, for_stmt: &StmtFor) {
+pub(crate) fn for_loop_set_mutations_binding(checker: &Checker, binding: &Binding) {
+    if !binding.kind.is_loop_var() {
+        return;
+    }
+
+    let semantic = checker.semantic();
+
+    let Some(for_stmt) = binding
+        .statement(semantic)
+        .and_then(|stmt| stmt.as_for_stmt())
+    else {
+        return;
+    };
+
+    if for_stmt.is_async {
+        return;
+    }
+
+    let binding_names = binding_names(&for_stmt.target);
+
+    if !binding_names
+        .first()
+        .is_some_and(|name| name.range().contains_range(binding.range))
+    {
+        return;
+    }
+
+    for_loop_set_mutations(checker, for_stmt, binding.scope, &binding_names);
+}
+
+/// FURB142
+pub(crate) fn for_loop_set_mutations_stmt(checker: &Checker, for_stmt: &StmtFor) {
+    // Loops with bindings are handled later.
+    if !binding_names(&for_stmt.target).is_empty() {
+        return;
+    }
+
+    let scope_id = checker.semantic().scope_id;
+
+    for_loop_set_mutations(checker, for_stmt, scope_id, &[]);
+}
+
+/// FURB142
+fn for_loop_set_mutations(
+    checker: &Checker,
+    for_stmt: &StmtFor,
+    scope_id: ScopeId,
+    binding_names: &[&ExprName],
+) {
     if !for_stmt.orelse.is_empty() {
         return;
     }
@@ -102,6 +154,15 @@ pub(crate) fn for_loop_set_mutations(checker: &Checker, for_stmt: &StmtFor) {
     let [arg] = expr_call.arguments.args.as_ref() else {
         return;
     };
+
+    if loop_variables_are_used_outside_loop(
+        binding_names,
+        for_stmt.range,
+        checker.semantic(),
+        scope_id,
+    ) {
+        return;
+    }
 
     let locator = checker.locator();
     let content = match (for_stmt.target.as_ref(), arg) {
