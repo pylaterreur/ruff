@@ -163,6 +163,76 @@ missing_argument: Callable[[], Factory[int]] = Factory[int]  # error: [invalid-a
 wrong_argument: Callable[[str], Factory[int]] = Factory[int]  # error: [invalid-assignment]
 ```
 
+## Constructor callbacks with an explicit `self` annotation in `__init__`
+
+An explicit `self` annotation in `__init__` can select the specialization that a constructor
+callback returns. A subclass that inherits this `__init__` still constructs instances of the
+subclass. This is a regression test for <https://github.com/astral-sh/ty/issues/3078>.
+
+pyright 1.1.414 uses the inherited `self` annotation as the return type, so it rejects the
+`derived`, `implementation`, `int_box_subclass` and `generic_box` assignments below. mypy 2.4.0
+accepts them.
+
+```py
+from __future__ import annotations
+from typing import Callable, Protocol, overload
+from ty_extensions._internal import into_regular_callable
+
+class Base:
+    def __init__(self: Base) -> None: ...
+
+class Derived(Base): ...
+
+# TODO: should be `() -> Derived`
+reveal_type(into_regular_callable(Derived))  # revealed: () -> Base
+
+# TODO: no error
+# error: [invalid-assignment]
+derived: Callable[[], Derived] = Derived
+base: Callable[[], Base] = Derived
+
+class Proto(Protocol):
+    def __init__(self: Proto) -> None: ...
+
+class Implementation(Proto): ...
+
+# TODO: no error
+# error: [invalid-assignment]
+implementation: Callable[[], Implementation] = Implementation
+
+class Box[T]:
+    value: T
+
+    @overload
+    def __init__(self: Box[int], value: int) -> None: ...
+    @overload
+    def __init__(self: Box[str], value: str) -> None: ...
+    def __init__(self, value: int | str) -> None: ...
+
+# revealed: Overload[[T](value: int) -> Box[int], [T](value: str) -> Box[str]]
+reveal_type(into_regular_callable(Box))
+
+int_box: Callable[[int], Box[int]] = Box
+str_box: Callable[[str], Box[str]] = Box
+mismatched_box: Callable[[int], Box[str]] = Box  # error: [invalid-assignment]
+
+class IntBox(Box[int]): ...
+
+# TODO: no error
+# error: [invalid-assignment]
+int_box_subclass: Callable[[int], IntBox] = IntBox
+# mypy shows no error here, but pyright does.
+mismatched_int_box_subclass: Callable[[str], IntBox] = IntBox  # error: [invalid-assignment]
+
+class GenericBox[T](Box[T]): ...
+
+# TODO: no error
+# error: [invalid-assignment]
+generic_box: Callable[[int], GenericBox[int]] = GenericBox
+# mypy shows no error here, but pyright does.
+mismatched_generic_box: Callable[[int], GenericBox[str]] = GenericBox  # error: [invalid-assignment]
+```
+
 ## Generic `__iter__` methods with explicit receivers
 
 Binding `__iter__` to an `Unpacker[Iterable[int]]` infers `S` as `int` from the explicit

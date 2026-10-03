@@ -1912,6 +1912,58 @@ d = Derived(1)  # OK
 reveal_type(d.x)  # revealed: int
 ```
 
+### Normal class inheriting from a dataclass, used as a callable
+
+The synthesized `__init__` method annotates `self` with the dataclass. A subclass that inherits this
+method still constructs instances of the subclass, also when it is used as a callable. mypy 2.4.0
+and pyright 1.1.414 accept all of the assignments below. This is a regression test for
+<https://github.com/astral-sh/ty/issues/3078>.
+
+```py
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Callable
+from ty_extensions._internal import into_regular_callable
+
+@dataclass
+class Base:
+    x: int = 0
+
+class Derived(Base): ...
+
+reveal_type(into_regular_callable(Base))  # revealed: (x: int = 0) -> Base
+# TODO: should be `(x: int = 0) -> Derived`
+reveal_type(into_regular_callable(Derived))  # revealed: (x: int = 0) -> Base
+
+# TODO: no error
+# error: [invalid-assignment]
+derived_factory: Callable[[int], Derived] = Derived
+base_factory: Callable[[int], Base] = Derived
+
+def _(derived_class: type[Derived]):
+    # TODO: no error
+    # error: [invalid-assignment]
+    derived_class_factory: Callable[[int], Derived] = derived_class
+
+# TODO: should be `defaultdict[Unknown, Derived]`
+reveal_type(defaultdict(Derived))  # revealed: defaultdict[Unknown, Base]
+
+@dataclass
+class Container:
+    # TODO: no error
+    # error: [invalid-assignment] "Object of type `dataclasses.Field[Base]` is not assignable to `Derived`"
+    derived: Derived = field(default_factory=Derived)
+
+@dataclass(kw_only=True)
+class KwOnlyBase: ...
+
+class KwOnlyDerived(KwOnlyBase): ...
+
+# TODO: no error
+# error: [invalid-assignment]
+kw_only_factory: Callable[[], KwOnlyDerived] = KwOnlyDerived
+```
+
 ### Dataclass inheriting from normal class
 
 ```py
@@ -2409,6 +2461,8 @@ properly inferred when calling the inherited `__init__` method.
 
 ```py
 from dataclasses import dataclass
+from typing import Callable
+from ty_extensions._internal import into_regular_callable
 
 @dataclass
 class ParentDataclass[T]:
@@ -2431,6 +2485,14 @@ reveal_type(result_int)  # revealed: ChildOfParentDataclass[int]
 
 result_str = uses_dataclass("hello")
 reveal_type(result_str)  # revealed: ChildOfParentDataclass[str]
+
+# TODO: should be `[T](value: T) -> ChildOfParentDataclass[T]`
+# revealed: [T](value: T) -> ParentDataclass[T]
+reveal_type(into_regular_callable(ChildOfParentDataclass))
+
+# TODO: no error
+# error: [invalid-assignment]
+child_factory: Callable[[int], ChildOfParentDataclass[int]] = ChildOfParentDataclass
 ```
 
 ## Descriptor-typed fields
