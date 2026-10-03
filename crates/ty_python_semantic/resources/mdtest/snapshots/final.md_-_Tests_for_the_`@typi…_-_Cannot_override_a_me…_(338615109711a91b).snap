@@ -73,9 +73,9 @@ mdtest path: crates/ty_python_semantic/resources/mdtest/final.md
  58 |     def class_method2(cls) -> int: ...  # error: [override-of-final-method]
  59 |     @staticmethod
  60 |     def static_method2() -> int: ...  # error: [override-of-final-method]
- 61 |     def decorated_1(self): ...  # TODO: should emit [override-of-final-method]
+ 61 |     def decorated_1(self): ...  # error: [override-of-final-method]
  62 |     @lossy_decorator
- 63 |     def decorated_2(self): ...  # TODO: should emit [override-of-final-method]
+ 63 |     def decorated_2(self): ...  # error: [override-of-final-method]
  64 | 
  65 | class OtherChild(Parent): ...
  66 | 
@@ -299,9 +299,51 @@ help: Remove the override of `static_method2`
    -     @staticmethod
    -     def static_method2() -> int: ...  # error: [override-of-final-method]
 59 +       # error: [override-of-final-method]
-60 |     def decorated_1(self): ...  # TODO: should emit [override-of-final-method]
+60 |     def decorated_1(self): ...  # error: [override-of-final-method]
    |
 note: This is an unsafe fix and may change runtime behavior
+
+```
+
+```
+error[override-of-final-method]: Cannot override `Parent.decorated_1`
+  --> src/mdtest_snippet.pyi:61:9
+   |
+61 |     def decorated_1(self): ...  # error: [override-of-final-method]
+   |         ^^^^^^^^^^^ Overrides a definition from superclass `Parent`
+info: `Parent.decorated_1` is decorated with `@final`, forbidding overrides
+  --> src/mdtest_snippet.pyi:31:5
+   |
+31 |     @final
+   |     ------
+32 |     def decorated_1(self): ...
+   |         ----------- `Parent.decorated_1` defined here
+help: Remove the override of `decorated_1`
+   |
+60 |     def static_method2() -> int: ...  # error: [override-of-final-method]
+   -     def decorated_1(self): ...  # error: [override-of-final-method]
+61 +       # error: [override-of-final-method]
+62 |     @lossy_decorator
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+```
+
+```
+error[override-of-final-method]: Cannot override `Parent.decorated_2`
+  --> src/mdtest_snippet.pyi:63:9
+   |
+63 |     def decorated_2(self): ...  # error: [override-of-final-method]
+   |         ^^^^^^^^^^^ Overrides a definition from superclass `Parent`
+info: `Parent.decorated_2` is decorated with `@final`, forbidding overrides
+  --> src/mdtest_snippet.pyi:33:5
+   |
+33 |     @final
+   |     ------
+34 |     @lossy_decorator
+35 |     def decorated_2(self): ...
+   |         ----------- `Parent.decorated_2` defined here
+help: Remove the override of `decorated_2`
 
 ```
 

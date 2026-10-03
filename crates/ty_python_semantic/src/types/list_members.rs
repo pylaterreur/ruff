@@ -872,18 +872,18 @@ impl<'db> PartialOrd for Member<'db> {
     }
 }
 
-/// Return reachable function definitions that bind `member_name` at the end of `subclass_scope`.
-fn end_of_scope_function_definitions<'db>(
+/// Return reachable function definitions that bind `member_name` at the end of `class_scope`.
+pub(super) fn end_of_scope_function_definitions<'db>(
     db: &'db dyn Db,
-    subclass_scope: ScopeId<'db>,
+    class_scope: ScopeId<'db>,
     member_name: &Name,
 ) -> smallvec::SmallVec<[Definition<'db>; 1]> {
-    let table = place_table(db, subclass_scope);
+    let table = place_table(db, class_scope);
     let Some(symbol_id) = table.symbol_id(member_name) else {
         return smallvec::smallvec![];
     };
 
-    let use_def = use_def_map(db, subclass_scope);
+    let use_def = use_def_map(db, class_scope);
     let predicates = use_def.predicates();
     let reachability_constraints = use_def.reachability_constraints();
     use_def

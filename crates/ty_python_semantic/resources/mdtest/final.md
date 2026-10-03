@@ -95,9 +95,9 @@ class Child(Parent):
     def class_method2(cls) -> int: ...  # error: [override-of-final-method]
     @staticmethod
     def static_method2() -> int: ...  # error: [override-of-final-method]
-    def decorated_1(self): ...  # TODO: should emit [override-of-final-method]
+    def decorated_1(self): ...  # error: [override-of-final-method]
     @lossy_decorator
-    def decorated_2(self): ...  # TODO: should emit [override-of-final-method]
+    def decorated_2(self): ...  # error: [override-of-final-method]
 
 class OtherChild(Parent): ...
 
@@ -315,9 +315,9 @@ class Parent:
 
 class Child(Parent):
     @lru_cache
-    def method1(self, x: int) -> None: ...  # TODO: should emit [override-of-final-method]
+    def method1(self, x: int) -> None: ...  # error: [override-of-final-method]
     @cache
-    def method2(self) -> None: ...  # TODO: should emit [override-of-final-method]
+    def method2(self) -> None: ...  # error: [override-of-final-method]
 ```
 
 ## Edge case: the function is decorated with `@final` but originally defined elsewhere

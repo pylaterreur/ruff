@@ -35,8 +35,10 @@ use crate::{
         },
         enums::{EnumMetadata, enum_metadata, is_enum_class_by_inheritance},
         function::{FunctionDecorators, FunctionType, KnownFunction, OverloadLiteral},
+        infer_definition_types,
         list_members::{
-            Member, MemberWithDefinition, all_end_of_scope_members, extract_underlying_functions,
+            Member, MemberWithDefinition, all_end_of_scope_members,
+            end_of_scope_function_definitions, extract_underlying_functions,
         },
         tuple::Tuple,
     },
@@ -760,14 +762,32 @@ fn check_class_declaration<'db>(
                     overridden_final_method = overridden_final_method.or_else(|| {
                         let (superclass_scope, superclass_symbol_id) = superclass_symbol?;
 
-                        // TODO: `@final` should be more like a type qualifier:
-                        // we should also recognise `@final`-decorated methods that don't end up
-                        // as being function- or property-types (because they're wrapped by other
-                        // decorators that transform the type into something else).
                         let underlying_functions = extract_underlying_functions(
                             db,
                             own_class_member.ignore_possibly_undefined()?,
                         );
+
+                        // Another decorator can wrap a `@final` method in an object that keeps
+                        // neither the function nor its decorators, such as the
+                        // `_lru_cache_wrapper` returned by `functools.lru_cache`. Look for
+                        // `@final` on the `def` statements of the superclass member instead.
+                        if underlying_functions.is_empty() {
+                            // A `def` statement is also a declaration, so there is nothing to
+                            // look for if the member is only ever assigned to, as most
+                            // overridden class attributes are.
+                            if !place_table(db, superclass_scope)
+                                .symbol(superclass_symbol_id)
+                                .is_declared()
+                            {
+                                return None;
+                            }
+                            let final_function = final_function_definition(
+                                db,
+                                superclass_scope,
+                                superclass_symbol_id,
+                            )?;
+                            return Some((superclass, smallvec::smallvec_inline![final_function]));
+                        }
 
                         if underlying_functions.iter().any(|function| {
                             function.has_known_decorator(db, FunctionDecorators::FINAL)
@@ -1353,6 +1373,35 @@ fn is_function_definition<'db>(
         .end_of_scope_symbol_bindings(symbol)
         .filter_map(|binding| binding.binding.definition())
         .any(|definition| definition.kind(db).is_function_def())
+}
+
+/// Salsa-tracked query that returns a reachable `@final` function definition of a symbol in a
+/// superclass scope, even if another decorator has replaced the function with an object that
+/// doesn't record its decorators:
+///
+/// ```python
+/// from functools import lru_cache
+/// from typing import final
+///
+/// class A:
+///     @lru_cache
+///     @final
+///     def f(self) -> None: ...  # `A.f` is an `_lru_cache_wrapper[None]`
+/// ```
+///
+/// Like [`is_function_definition`], this only considers `def` statements, and it is a
+/// Salsa-tracked query because the superclass might be defined in a different module.
+#[salsa::tracked(returns(copy), heap_size=ruff_memory_usage::heap_size)]
+fn final_function_definition<'db>(
+    db: &'db dyn Db,
+    scope: ScopeId<'db>,
+    symbol: ScopedSymbolId,
+) -> Option<FunctionType<'db>> {
+    let name = place_table(db, scope).symbol(symbol).name();
+    end_of_scope_function_definitions(db, scope, name)
+        .into_iter()
+        .filter_map(|definition| infer_definition_types(db, definition).function_type(definition))
+        .find(|function| function.has_known_decorator(db, FunctionDecorators::FINAL))
 }
 
 /// Returns the variable kind for an attribute if it should participate in `ClassVar` override checks.
