@@ -10528,6 +10528,10 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
         let mut place = PlaceAndQualifiers::from(Place::Undefined);
         let mut failure = None;
         let mut checked_deprecated = false;
+        // A source whose bindings of the place are all unreachable never binds it at runtime, so
+        // we keep looking for the place in the later sources, such as the builtins. We only use
+        // the `Never` type of such a source if none of the later sources binds the place.
+        let mut from_unreachable_bindings = None;
 
         while let Some(step) = resolution.next() {
             match step {
@@ -10545,11 +10549,22 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
                     }
                     let narrowing_constraints = resolution.narrowing_constraints_for(&source);
                     place = place.or_fall_back_to(self.db(), env, || {
-                        self.infer_place_load_source(
+                        let mut source_place = self.infer_place_load_source(
                             resolution.place_expr(),
                             source,
                             narrowing_constraints,
-                        )
+                        );
+                        if source_place
+                            .qualifiers
+                            .contains(TypeQualifiers::FROM_UNREACHABLE_BINDINGS)
+                        {
+                            source_place
+                                .qualifiers
+                                .remove(TypeQualifiers::FROM_UNREACHABLE_BINDINGS);
+                            from_unreachable_bindings.get_or_insert(source_place);
+                            return PlaceAndQualifiers::unbound();
+                        }
+                        source_place
                     });
                     if place.place.is_definitely_bound() {
                         break;
@@ -10566,6 +10581,10 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
                     break;
                 }
             }
+        }
+
+        if let Some(from_unreachable_bindings) = from_unreachable_bindings {
+            place = place.or_fall_back_to(self.db(), env, || from_unreachable_bindings);
         }
 
         if !checked_deprecated && let Some(ty) = place.place.ignore_possibly_undefined() {
@@ -10597,13 +10616,13 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
 
         let place = match source.kind {
             PlaceLoadSourceKind::Bindings(bindings) => {
-                let mut place = place_from_bindings_with_reachability_cache(
+                let inferred = place_from_bindings_with_reachability_cache(
                     db,
                     env,
                     bindings,
                     self.reachability_cache(),
-                )
-                .place;
+                );
+                let mut place = inferred.place;
 
                 // Compatibility policy: ty historically treats a possibly-bound module snapshot
                 // reached through a class-body global fallback as definitely bound. At runtime,
@@ -10612,7 +10631,11 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
                     place = Place::Defined(defined.with_definedness(Definedness::AlwaysDefined));
                 }
 
-                place.into()
+                if inferred.from_unreachable_bindings {
+                    place.with_qualifiers(TypeQualifiers::FROM_UNREACHABLE_BINDINGS)
+                } else {
+                    place.into()
+                }
             }
             PlaceLoadSourceKind::DefinitionsFromOwningScope { scope, id } => place_by_id(
                 db,

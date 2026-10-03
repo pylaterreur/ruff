@@ -1196,11 +1196,14 @@ impl<'db> PlaceAndQualifiers<'db> {
         previous_place: Self,
         cycle: &salsa::Cycle,
     ) -> Self {
-        let qualifiers = if cycle.iteration() <= 1 {
+        let mut qualifiers = if cycle.iteration() <= 1 {
             self.qualifiers
         } else {
             previous_place.qualifiers.union(self.qualifiers)
         };
+        // `FROM_UNREACHABLE_BINDINGS` only applies to the `Never` type of a single lookup, and
+        // the place below can be widened from another iteration's type.
+        qualifiers.remove(TypeQualifiers::FROM_UNREACHABLE_BINDINGS);
         let place = match (previous_place.place, self.place) {
             // In fixed-point iteration of type inference, the member result must be monotonically
             // widened and not "oscillate". The type component is widened by unioning the previous
@@ -1427,13 +1430,16 @@ pub(crate) fn place_by_id<'db>(
         // Place is undeclared, infer the type from bindings
         PlaceAndQualifiers {
             place: Place::Undefined,
-            qualifiers,
+            mut qualifiers,
         } => {
             let bindings = all_considered_bindings();
             let boundness_analysis = bindings.boundness_analysis();
-            let mut inferred =
-                place_from_bindings_impl(db, &env, bindings, requires_explicit_reexport, None)
-                    .place;
+            let inferred =
+                place_from_bindings_impl(db, &env, bindings, requires_explicit_reexport, None);
+            if inferred.from_unreachable_bindings {
+                qualifiers |= TypeQualifiers::FROM_UNREACHABLE_BINDINGS;
+            }
+            let mut inferred = inferred.place;
 
             if boundness_analysis == BoundnessAnalysis::AssumeBound {
                 if let Place::Defined(defined) = inferred {
@@ -1960,6 +1966,12 @@ fn place_from_bindings_impl<'db>(
                 // Here, we are *not* in an unreachable section of code. However, it is still okay to
                 // return `Never` in this case, because we will union the types of all bindings, and
                 // `Never` will be eliminated automatically.
+                //
+                // A lookup from a nested scope or a deferred annotation can consider all bindings
+                // of the place in its scope, along with an implicit `<unbound>` binding that has
+                // the reachability of the first mention of the place. If all of these are
+                // unreachable, we also return `Never` here, although the lookup itself can be
+                // reachable. See `PlaceWithDefinition::from_unreachable_bindings`.
 
                 if unbound_visibility().is_none_or(Truthiness::is_always_false) {
                     return Some((Type::Never, static_reachability));
@@ -2063,15 +2075,42 @@ fn place_from_bindings_impl<'db>(
         Place::Undefined
     };
 
+    // Only reachable bindings set `first_definition`, so a defined place without one is the
+    // `Never` type returned above for unreachable bindings. For a lookup that analyzes boundness,
+    // this means that the use itself is unreachable, so we only flag lookups from nested scopes
+    // and deferred annotations, which don't analyze boundness.
+    let from_unreachable_bindings = boundness_analysis == BoundnessAnalysis::AssumeBound
+        && first_definition.is_none()
+        && !place.is_undefined();
+
     PlaceWithDefinition {
         place,
         first_definition,
+        from_unreachable_bindings,
     }
 }
 
 pub(super) struct PlaceWithDefinition<'db> {
     pub(super) place: Place<'db>,
     pub(super) first_definition: Option<Definition<'db>>,
+    /// Whether `place` is `Never` only because all bindings of the place are unreachable, in a
+    /// lookup from a nested scope or a deferred annotation.
+    ///
+    /// For example, on Python 3.11 or later, the module below never binds `ExceptionGroup` at
+    /// runtime, so the lookup in `f` finds the builtin `ExceptionGroup` class:
+    ///
+    /// ```py
+    /// import sys
+    ///
+    /// if sys.version_info < (3, 11):
+    ///     from exceptiongroup import ExceptionGroup
+    ///
+    /// def f():
+    ///     return ExceptionGroup
+    /// ```
+    ///
+    /// See [`TypeQualifiers::FROM_UNREACHABLE_BINDINGS`].
+    pub(super) from_unreachable_bindings: bool,
 }
 
 /// Accumulates types from multiple bindings or declarations, and eventually builds a

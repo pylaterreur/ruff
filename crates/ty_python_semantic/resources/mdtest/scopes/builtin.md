@@ -61,42 +61,26 @@ if PY2:
 
 reveal_type(range)  # revealed: <class 'range'>
 
-# TODO: no error
-# error: 10 [invalid-type-form]
-# error: 18 [invalid-type-form]
 def f(x: str) -> str:
-    # TODO: should be `str`
-    reveal_type(x)  # revealed: Unknown
-    # TODO: should be `<class 'range'>`
-    reveal_type(range)  # revealed: Never
+    reveal_type(x)  # revealed: str
+    reveal_type(range)  # revealed: <class 'range'>
     return x
 
 def outer():
-    # TODO: no error
-    # error: 18 [invalid-type-form]
-    # error: 26 [invalid-type-form]
     def inner(x: str) -> str:
-        # TODO: should be `str`
-        reveal_type(x)  # revealed: Unknown
-        # TODO: should be `<class 'range'>`
-        reveal_type(range)  # revealed: Never
+        reveal_type(x)  # revealed: str
+        reveal_type(range)  # revealed: <class 'range'>
         return x
 
 class C:
-    # TODO: no error
-    # error: [invalid-type-form]
     attribute: str
 
-# TODO: should be `str`
-reveal_type(C().attribute)  # revealed: Unknown
+reveal_type(C().attribute)  # revealed: str
 
-# TODO: no error
-# error: [invalid-type-form]
 type Strings = list[str]
 
 def g(strings: Strings):
-    # TODO: should be `list[str]`
-    reveal_type(strings)  # revealed: list[Unknown]
+    reveal_type(strings)  # revealed: list[str]
 ```
 
 ### Annotations deferred with `from __future__ import annotations`
@@ -109,15 +93,9 @@ import sys
 if sys.version_info < (3, 0):
     str = unicode
 
-# TODO: no error
-# error: 10 [invalid-type-form]
-# error: 19 [invalid-type-form]
-# error: 28 [invalid-type-form]
 def f(x: str, y: "str") -> str:
-    # TODO: should be `str`
-    reveal_type(x)  # revealed: Unknown
-    # TODO: should be `str`
-    reveal_type(y)  # revealed: Unknown
+    reveal_type(x)  # revealed: str
+    reveal_type(y)  # revealed: str
     return x
 ```
 
@@ -140,17 +118,14 @@ if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup, ExceptionGroup
 
 def handle(group: ExceptionGroup[ValueError]) -> None:
-    # TODO: should be `ExceptionGroup[ValueError]`
-    reveal_type(group)  # revealed: Unknown
+    reveal_type(group)  # revealed: ExceptionGroup[ValueError]
 
 def check(exc: BaseException) -> None:
     if isinstance(exc, BaseExceptionGroup):
-        # TODO: should be `BaseExceptionGroup[Unknown]`
-        reveal_type(exc)  # revealed: BaseException
+        reveal_type(exc)  # revealed: BaseExceptionGroup[Unknown]
 
 def get_class() -> None:
-    # TODO: should be `<class 'ExceptionGroup'>`
-    reveal_type(ExceptionGroup)  # revealed: Never
+    reveal_type(ExceptionGroup)  # revealed: <class 'ExceptionGroup'>
 ```
 
 ### `exceptiongroup` backport on Python 3.10

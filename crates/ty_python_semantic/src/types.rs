@@ -11343,7 +11343,7 @@ impl std::fmt::Display for DynamicType<'_> {
 bitflags! {
     /// Type qualifiers from annotations or synthesized member metadata.
     #[derive(Copy, Clone, Debug, Eq, PartialEq, Default, Hash)]
-    pub struct TypeQualifiers: u8 {
+    pub struct TypeQualifiers: u16 {
         /// `typing.ClassVar`
         const CLASS_VAR = 1 << 0;
         /// `typing.Final`
@@ -11364,6 +11364,11 @@ bitflags! {
         /// `__getattr__` function. We need this in order to implement precedence of submodules
         /// over module-level `__getattr__`, for compatibility with other type checkers.
         const FROM_MODULE_GETATTR = 1 << 7;
+        /// A non-standard type qualifier that marks the `Never` type inferred for a place whose
+        /// bindings are all unreachable, when it is looked up from a nested scope or a deferred
+        /// annotation. Such a place is never bound at runtime, so name resolution gives
+        /// precedence to later sources, such as the builtins.
+        const FROM_UNREACHABLE_BINDINGS = 1 << 8;
     }
 }
 
@@ -11396,8 +11401,9 @@ impl TypeQualifiers {
     /// Non-standard qualifiers are internal implementation details like
     /// `IMPLICIT_INSTANCE_ATTRIBUTE` and `FROM_MODULE_GETATTR`.
     pub fn is_non_standard(self) -> bool {
-        const NON_STANDARD: TypeQualifiers =
-            TypeQualifiers::IMPLICIT_INSTANCE_ATTRIBUTE.union(TypeQualifiers::FROM_MODULE_GETATTR);
+        const NON_STANDARD: TypeQualifiers = TypeQualifiers::IMPLICIT_INSTANCE_ATTRIBUTE
+            .union(TypeQualifiers::FROM_MODULE_GETATTR)
+            .union(TypeQualifiers::FROM_UNREACHABLE_BINDINGS);
         self.intersects(NON_STANDARD)
     }
 }
