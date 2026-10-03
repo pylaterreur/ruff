@@ -167,3 +167,40 @@ class UnacceptableOverload2:
     @overload
     def __exit__(self, exc_typ: object, exc: Exception, tb: builtins.TracebackType) -> None: ...  # PYI036
     def __exit__(self, exc_typ: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None) -> None: ...
+
+# Stringized annotations are checked like unquoted ones:
+# https://github.com/astral-sh/ruff/issues/27755
+
+class GoodStringized:
+    def __exit__(self, typ: "type[BaseException] | None", exc: "BaseException | None", tb: "TracebackType | None") -> None: ...
+    async def __aexit__(self, typ: "typing.Optional[Type[BaseException]]", exc: "typing.Union[BaseException, None]", tb: "types.TracebackType | None") -> None: ...
+
+class GoodStringizedObject:
+    def __exit__(self, typ: "object", exc: "builtins.object", tb: "Unused") -> None: ...
+    async def __aexit__(self, typ: "_typeshed.Unused", *args: "object") -> None: ...
+
+class GoodStringizedStarArgs:
+    def __exit__(self, *args: "object") -> None: ...
+    async def __aexit__(self, *args: "Unused") -> None: ...
+
+class BadStringized:
+    def __exit__(self, typ: "type[BaseException]", exc: "BaseException | None", tb: "TracebackType | None") -> None: ... # PYI036: First arg has bad annotation
+    async def __aexit__(self, typ: "type[BaseException] | None", exc: "Exception | None", tb: "TracebackType") -> None: ... # PYI036: Second and third args have bad annotations
+
+class BadStringizedStarArgs:
+    def __exit__(self, *args: "Any") -> None: ... # PYI036: Bad star-args annotation
+    async def __aexit__(self, typ: "type[BaseException] | None", *args: "list[str]") -> None: ... # PYI036: Bad star-args annotation
+
+class AcceptableStringizedOverload:
+    @overload
+    def __exit__(self, exc_typ: "None", exc: "None", exc_tb: "object") -> None: ...
+    @overload
+    def __exit__(self, exc_typ: "type[BaseException]", exc: "BaseException", exc_tb: "TracebackType") -> None: ...
+    def __exit__(self, exc_typ: "type[BaseException] | None", exc: "BaseException | None", exc_tb: "TracebackType | None") -> None: ...
+
+class UnacceptableStringizedOverload:
+    @overload
+    def __exit__(self, exc_typ: "None", exc: "None", tb: "None") -> None: ...  # Okay
+    @overload
+    def __exit__(self, exc_typ: "Exception", exc: "Exception", tb: "TracebackType") -> None: ...  # PYI036
+    def __exit__(self, exc_typ: "type[BaseException] | None", exc: "BaseException | None", tb: "TracebackType | None") -> None: ...

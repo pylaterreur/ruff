@@ -219,3 +219,79 @@ PYI036 Annotations for a three-argument `__exit__` overload (excluding `self`) s
 164 |     @overload
 165 |     def __exit__(self, exc_typ: object, exc: Exception, tb: builtins.TracebackType) -> None: ...  # PYI036
     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 |
+167 | # Stringized annotations are checked like unquoted ones:
+    |
+
+PYI036 The first argument in `__exit__` should be annotated with `object` or `type[BaseException] | None`
+   --> PYI036.pyi:183:29
+    |
+182 | class BadStringized:
+183 |     def __exit__(self, typ: "type[BaseException]", exc: "BaseException | None", tb: "TracebackType | None") -> None: ... # PYI036: Fi…
+    |                             ^^^^^^^^^^^^^^^^^^^^^
+184 |     async def __aexit__(self, typ: "type[BaseException] | None", exc: "Exception | None", tb: "TracebackType") -> None: ... # PYI036:…
+    |
+
+PYI036 The second argument in `__aexit__` should be annotated with `object` or `BaseException | None`
+   --> PYI036.pyi:184:71
+    |
+182 | class BadStringized:
+183 |     def __exit__(self, typ: "type[BaseException]", exc: "BaseException | None", tb: "TracebackType | None") -> None: ... # PYI036: Fi…
+184 |     async def __aexit__(self, typ: "type[BaseException] | None", exc: "Exception | None", tb: "TracebackType") -> None: ... # PYI036:…
+    |                                                                       ^^^^^^^^^^^^^^^^^^
+185 |
+186 | class BadStringizedStarArgs:
+    |
+
+PYI036 The third argument in `__aexit__` should be annotated with `object` or `types.TracebackType | None`
+   --> PYI036.pyi:184:95
+    |
+182 | class BadStringized:
+183 |     def __exit__(self, typ: "type[BaseException]", exc: "BaseException | None", tb: "TracebackType | None") -> None: ... # PYI036: Fi…
+184 |     async def __aexit__(self, typ: "type[BaseException] | None", exc: "Exception | None", tb: "TracebackType") -> None: ... # PYI036:…
+    |                                                                                               ^^^^^^^^^^^^^^^
+185 |
+186 | class BadStringizedStarArgs:
+    |
+
+PYI036 [*] Star-args in `__exit__` should be annotated with `object`
+   --> PYI036.pyi:187:31
+    |
+186 | class BadStringizedStarArgs:
+187 |     def __exit__(self, *args: "Any") -> None: ... # PYI036: Bad star-args annotation
+    |                               ^^^^^
+188 |     async def __aexit__(self, typ: "type[BaseException] | None", *args: "list[str]") -> None: ... # PYI036: Bad star-args annotation
+    |
+help: Annotate star-args with `object`
+    |
+186 | class BadStringizedStarArgs:
+    -     def __exit__(self, *args: "Any") -> None: ... # PYI036: Bad star-args annotation
+187 +     def __exit__(self, *args: object) -> None: ... # PYI036: Bad star-args annotation
+188 |     async def __aexit__(self, typ: "type[BaseException] | None", *args: "list[str]") -> None: ... # PYI036: Bad star-args annotation
+    |
+
+PYI036 [*] Star-args in `__aexit__` should be annotated with `object`
+   --> PYI036.pyi:188:73
+    |
+186 | class BadStringizedStarArgs:
+187 |     def __exit__(self, *args: "Any") -> None: ... # PYI036: Bad star-args annotation
+188 |     async def __aexit__(self, typ: "type[BaseException] | None", *args: "list[str]") -> None: ... # PYI036: Bad star-args annotation
+    |                                                                         ^^^^^^^^^^^
+189 |
+190 | class AcceptableStringizedOverload:
+    |
+help: Annotate star-args with `object`
+    |
+187 |     def __exit__(self, *args: "Any") -> None: ... # PYI036: Bad star-args annotation
+    -     async def __aexit__(self, typ: "type[BaseException] | None", *args: "list[str]") -> None: ... # PYI036: Bad star-args annotation
+188 +     async def __aexit__(self, typ: "type[BaseException] | None", *args: object) -> None: ... # PYI036: Bad star-args annotation
+189 |
+    |
+
+PYI036 Annotations for a three-argument `__exit__` overload (excluding `self`) should either be `None, None, None` or `type[BaseException], BaseException, types.TracebackType`
+   --> PYI036.pyi:200:17
+    |
+198 |     def __exit__(self, exc_typ: "None", exc: "None", tb: "None") -> None: ...  # Okay
+199 |     @overload
+200 |     def __exit__(self, exc_typ: "Exception", exc: "Exception", tb: "TracebackType") -> None: ...  # PYI036
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
