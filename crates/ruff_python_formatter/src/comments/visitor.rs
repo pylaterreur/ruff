@@ -2,14 +2,18 @@ use std::fmt::Debug;
 use std::iter::Peekable;
 
 use ruff_formatter::{SourceCode, SourceCodeSlice};
+use ruff_python_ast::helpers::comment_indentation_after;
 use ruff_python_ast::{AnyNodeRef, Identifier};
 use ruff_python_ast::{Mod, Stmt};
 // The interface is designed to only export the members relevant for iterating nodes in
 // pre-order.
 #[allow(clippy::wildcard_imports)]
 use ruff_python_ast::visitor::source_order::*;
-use ruff_python_trivia::{CommentLinePosition, CommentRanges, TriviaRanges};
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_python_trivia::{
+    CommentLinePosition, CommentRanges, SimpleToken, SimpleTokenKind, SimpleTokenizer,
+    TriviaRanges, indentation_at_offset,
+};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::comments::node_key::NodeRefEqualityKey;
 use crate::comments::placement::place_comment;
@@ -34,6 +38,8 @@ pub(super) struct CommentsVisitor<'a, 'builder> {
     parents: Vec<AnyNodeRef<'a>>,
     preceding_node: Option<AnyNodeRef<'a>>,
     comment_ranges: Peekable<std::slice::Iter<'a, TextRange>>,
+    /// The trivia surrounding the last visited comment.
+    trivia: SurroundingTrivia,
 }
 
 impl<'a, 'builder> CommentsVisitor<'a, 'builder> {
@@ -48,6 +54,7 @@ impl<'a, 'builder> CommentsVisitor<'a, 'builder> {
             parents: Vec::new(),
             preceding_node: None,
             comment_ranges: comment_ranges.iter().peekable(),
+            trivia: SurroundingTrivia::default(),
         }
     }
 
@@ -66,6 +73,29 @@ impl<'a, 'builder> CommentsVisitor<'a, 'builder> {
         self.comment_ranges
             .peek()
             .is_none_or(|next_comment| next_comment.start() >= node_end)
+    }
+
+    /// Returns the trivia surrounding the comment at `comment_range`.
+    ///
+    /// Comments are visited in source order, which allows lexing the trivia only once for all
+    /// comments between the same two tokens.
+    fn surrounding_trivia(&mut self, comment_range: TextRange) -> SurroundingTrivia {
+        let source = self.source_code.as_str();
+
+        if comment_range.start() >= self.trivia.range.end() {
+            self.trivia = SurroundingTrivia::from_first_comment(comment_range, source);
+        }
+
+        if let Some(indentation) = indentation_at_offset(comment_range.start(), source) {
+            let indentation = indentation.text_len();
+            self.trivia.min_indentation = Some(
+                self.trivia
+                    .min_indentation
+                    .map_or(indentation, |min| min.min(indentation)),
+            );
+        }
+
+        self.trivia
     }
 }
 
@@ -94,6 +124,7 @@ impl<'ast> SourceOrderVisitor<'ast> for CommentsVisitor<'ast, '_> {
                     self.source_code.as_str(),
                 ),
                 slice: self.source_code.slice(*comment_range),
+                trivia: self.surrounding_trivia(*comment_range),
             };
 
             self.builder.push_comment(comment);
@@ -137,6 +168,7 @@ impl<'ast> SourceOrderVisitor<'ast> for CommentsVisitor<'ast, '_> {
                     self.source_code.as_str(),
                 ),
                 slice: self.source_code.slice(*comment_range),
+                trivia: self.surrounding_trivia(*comment_range),
             };
 
             self.builder.push_comment(comment);
@@ -184,6 +216,7 @@ pub(crate) struct DecoratedComment<'a> {
     parent: Option<AnyNodeRef<'a>>,
     line_position: CommentLinePosition,
     slice: SourceCodeSlice,
+    trivia: SurroundingTrivia,
 }
 
 impl<'a> DecoratedComment<'a> {
@@ -323,6 +356,53 @@ impl<'a> DecoratedComment<'a> {
     pub(crate) fn slice(&self) -> &SourceCodeSlice {
         &self.slice
     }
+
+    /// Returns the non-trivia tokens in `range`, like
+    /// `SimpleTokenizer::new(source, range).skip_trivia()`, but without lexing the trivia
+    /// surrounding this comment.
+    ///
+    /// Prefer this method when `range` overlaps with the comment's surrounding trivia, e.g. when
+    /// `range` ends at the comment. Lexing the trivia again for every comment makes placing many
+    /// consecutive comments quadratic.
+    ///
+    /// `range` must not start or end inside a comment.
+    pub(super) fn non_trivia_tokens<'s>(
+        &self,
+        range: TextRange,
+        source: &'s str,
+    ) -> impl Iterator<Item = SimpleToken> + use<'s> {
+        let trivia = self.trivia.range;
+        let before = TextRange::new(
+            range.start(),
+            trivia.start().clamp(range.start(), range.end()),
+        );
+        let after = TextRange::new(trivia.end().clamp(before.end(), range.end()), range.end());
+
+        SimpleTokenizer::new(source, before)
+            .skip_trivia()
+            .chain(SimpleTokenizer::new(source, after).skip_trivia())
+    }
+
+    /// Returns `true` if there's an empty line between this comment and the next token.
+    pub(super) fn has_empty_line_after(&self) -> bool {
+        self.trivia
+            .last_comment_before_empty_line
+            .is_some_and(|comment_end| comment_end >= self.end())
+    }
+
+    /// Returns the indentation of the least indented own-line comment between `preceding` and this
+    /// comment, including this comment.
+    ///
+    /// See [`comment_indentation_after`].
+    pub(super) fn indentation_after(&self, preceding: AnyNodeRef, source: &str) -> TextSize {
+        // If the trivia starts right after `preceding`, then it contains all comments between
+        // `preceding` and this comment (and none before `preceding`).
+        if self.trivia.range.start() == preceding.end() {
+            self.trivia.min_indentation.unwrap_or_default()
+        } else {
+            comment_indentation_after(preceding, self.range(), source)
+        }
+    }
 }
 
 impl Ranged for DecoratedComment<'_> {
@@ -335,6 +415,69 @@ impl Ranged for DecoratedComment<'_> {
 impl From<DecoratedComment<'_>> for SourceComment {
     fn from(decorated: DecoratedComment) -> Self {
         Self::new(decorated.slice, decorated.line_position)
+    }
+}
+
+/// The whitespace and comments between the token preceding a comment and the token following it.
+///
+/// ```python
+/// a = 1  # comment 1
+///
+/// # comment 2
+/// # comment 3
+/// b = 2
+/// ```
+///
+/// All three comments share the same surrounding trivia, from the end of `1` to the start of `b`.
+/// A line continuation ends the trivia like a token, and so does the end of the file.
+#[derive(Debug, Clone, Copy, Default)]
+struct SurroundingTrivia {
+    range: TextRange,
+    /// The end of the last comment in `range` that is followed by an empty line.
+    last_comment_before_empty_line: Option<TextSize>,
+    /// The indentation of the least indented own-line comment in `range`, up to the current
+    /// comment.
+    min_indentation: Option<TextSize>,
+}
+
+impl SurroundingTrivia {
+    /// Lexes the trivia surrounding the first comment between two tokens.
+    fn from_first_comment(comment_range: TextRange, source: &str) -> Self {
+        // Python's whitespace and newline characters are exactly the ASCII whitespace characters.
+        let start = source[TextRange::up_to(comment_range.start())]
+            .trim_ascii_end()
+            .text_len();
+
+        let mut end = source.text_len();
+        let mut comment_end = comment_range.end();
+        let mut newlines = 0u32;
+        let mut last_comment_before_empty_line = None;
+
+        for token in SimpleTokenizer::starts_at(comment_range.end(), source) {
+            match token.kind() {
+                SimpleTokenKind::Whitespace => {}
+                SimpleTokenKind::Newline => {
+                    newlines += 1;
+                    if newlines == 2 {
+                        last_comment_before_empty_line = Some(comment_end);
+                    }
+                }
+                SimpleTokenKind::Comment => {
+                    comment_end = token.end();
+                    newlines = 0;
+                }
+                _ => {
+                    end = token.start();
+                    break;
+                }
+            }
+        }
+
+        Self {
+            range: TextRange::new(start, end),
+            last_comment_before_empty_line,
+            min_indentation: None,
+        }
     }
 }
 
@@ -627,5 +770,74 @@ impl<'a> CommentsMapBuilder<'a> {
     fn push_trailing_comment(&mut self, node: AnyNodeRef<'a>, comment: impl Into<SourceComment>) {
         self.comments
             .push_trailing(NodeRefEqualityKey::from_ref(node), comment.into());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use ruff_formatter::SourceCode;
+    use ruff_python_ast::PySourceType;
+    use ruff_python_parser::{ParseOptions, parse};
+    use ruff_python_trivia::TriviaRanges;
+
+    use crate::comments::visitor::{DecoratedComment, collect_comments};
+
+    #[test]
+    fn empty_line_after_comment() -> Result<()> {
+        let source = r"
+x = 1  # trailing comment
+
+# own line comment
+
+# another own line comment
+# block
+y = 2
+";
+        let parsed = parse(source, ParseOptions::from(PySourceType::Python))?;
+        let trivia = TriviaRanges::from(parsed.tokens());
+        let comments =
+            collect_comments(parsed.syntax(), SourceCode::new(source), trivia.comments());
+
+        let empty_line_after: Vec<_> = comments
+            .iter()
+            .map(DecoratedComment::has_empty_line_after)
+            .collect();
+        assert_eq!(empty_line_after, [true, true, false, false]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn indentation_after_preceding_node() -> Result<()> {
+        // The line continuation separates the last comment from the other comments, but the other
+        // comments still count because they are between the comment and `pass`.
+        let source = r"
+if True:
+    pass
+        # indented
+    # same as `pass`
+        # indented again
+\
+        # after a line continuation
+else:
+    pass
+";
+        let parsed = parse(source, ParseOptions::from(PySourceType::Python))?;
+        let trivia = TriviaRanges::from(parsed.tokens());
+        let comments =
+            collect_comments(parsed.syntax(), SourceCode::new(source), trivia.comments());
+
+        let indentations: Vec<_> = comments
+            .iter()
+            .filter_map(|comment| {
+                let preceding = comment.preceding_node()?;
+                Some(comment.indentation_after(preceding, source).to_u32())
+            })
+            .collect();
+        assert_eq!(indentations, [8, 4, 4, 4]);
+
+        Ok(())
     }
 }

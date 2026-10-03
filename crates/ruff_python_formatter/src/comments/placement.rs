@@ -1,4 +1,3 @@
-use ast::helpers::comment_indentation_after;
 use ruff_python_ast::whitespace::indentation;
 use ruff_python_ast::{
     self as ast, AnyNodeRef, Comprehension, Expr, ModModule, Parameter, Parameters, StringLike,
@@ -133,9 +132,8 @@ fn handle_parenthesized_comment<'a>(
     // ]
     // ```
     let range = TextRange::new(preceding.end(), comment.start());
-    let tokenizer = SimpleTokenizer::new(source, range);
-    if tokenizer
-        .skip_trivia()
+    if comment
+        .non_trivia_tokens(range, source)
         .take_while(|token| {
             !matches!(
                 token.kind,
@@ -164,9 +162,8 @@ fn handle_parenthesized_comment<'a>(
     // ]
     // ```
     let range = TextRange::new(comment.end(), following.start());
-    let tokenizer = SimpleTokenizer::new(source, range);
-    if tokenizer
-        .skip_trivia()
+    if comment
+        .non_trivia_tokens(range, source)
         .take_while(|token| {
             !matches!(
                 token.kind,
@@ -286,13 +283,8 @@ fn handle_enclosed_comment<'a>(
 
             CommentPlacement::Default(comment)
         }
-        AnyNodeRef::ModModule(module) => {
-            handle_trailing_module_comment(module, comment).or_else(|comment| {
-                handle_module_level_own_line_comment_before_class_or_function_comment(
-                    comment, source,
-                )
-            })
-        }
+        AnyNodeRef::ModModule(module) => handle_trailing_module_comment(module, comment)
+            .or_else(handle_module_level_own_line_comment_before_class_or_function_comment),
         AnyNodeRef::WithItem(_) => handle_with_item_comment(comment, source),
         AnyNodeRef::PatternMatchSequence(pattern_match_sequence) => {
             if SequenceType::from_pattern(pattern_match_sequence, source).is_parenthesized() {
@@ -489,10 +481,9 @@ fn handle_own_line_comment_around_body<'a>(
     //     # default placement comment
     //     def inline_after_else(): ...
     // ```
-    let maybe_token =
-        SimpleTokenizer::new(source, TextRange::new(preceding.end(), comment.start()))
-            .skip_trivia()
-            .next();
+    let maybe_token = comment
+        .non_trivia_tokens(TextRange::new(preceding.end(), comment.start()), source)
+        .next();
     if maybe_token.is_some() {
         return CommentPlacement::Default(comment);
     }
@@ -504,7 +495,7 @@ fn handle_own_line_comment_around_body<'a>(
             // recursively last statement in the preceding body with the matching indentation.
             handle_own_line_comment_after_branch(comment, preceding, source)
         })
-        .or_else(|comment| handle_own_line_comment_between_statements(comment, source))
+        .or_else(handle_own_line_comment_between_statements)
 }
 
 /// Handles own-line comments between statements. If an own-line comment is between two statements,
@@ -527,10 +518,7 @@ fn handle_own_line_comment_around_body<'a>(
 /// # comment
 /// y = 2
 /// ```
-fn handle_own_line_comment_between_statements<'a>(
-    comment: DecoratedComment<'a>,
-    source: &str,
-) -> CommentPlacement<'a> {
+fn handle_own_line_comment_between_statements(comment: DecoratedComment) -> CommentPlacement {
     let Some(preceding) = comment.preceding_node() else {
         return CommentPlacement::Default(comment);
     };
@@ -569,10 +557,10 @@ fn handle_own_line_comment_between_statements<'a>(
     //
     // y = 2
     // ```
-    if max_empty_lines(&source[TextRange::new(comment.end(), following.start())]) == 0 {
-        CommentPlacement::leading(following, comment)
-    } else {
+    if comment.has_empty_line_after() {
         CommentPlacement::trailing(preceding, comment)
+    } else {
+        CommentPlacement::leading(following, comment)
     }
 }
 
@@ -601,7 +589,7 @@ fn handle_own_line_comment_between_branches<'a>(
 
     // It depends on the indentation level of the comment if it is a leading comment for the
     // following branch or if it a trailing comment of the previous body's last statement.
-    let comment_indentation = comment_indentation_after(preceding, comment.range(), source);
+    let comment_indentation = comment.indentation_after(preceding, source);
 
     let preceding_indentation = indentation(source, &preceding).map_or_else(
         // If `indentation` returns `None`, then there is leading
@@ -743,7 +731,7 @@ fn handle_own_line_comment_after_branch<'a>(
 
     // We only care about the length because indentations with mixed spaces and tabs are only valid if
     // the indent-level doesn't depend on the tab width (the indent level must be the same if the tab width is 1 or 8).
-    let comment_indentation = comment_indentation_after(preceding, comment.range(), source);
+    let comment_indentation = comment.indentation_after(preceding, source);
 
     // Keep the comment on the entire statement in case it's a trailing comment
     // ```python
@@ -916,8 +904,8 @@ fn handle_trailing_binary_expression_left_or_operator_comment<'a>(
         binary_expression.right.start(),
     );
 
-    let mut tokens = SimpleTokenizer::new(source, between_operands_range)
-        .skip_trivia()
+    let mut tokens = comment
+        .non_trivia_tokens(between_operands_range, source)
         .skip_while(|token| token.kind == SimpleTokenKind::RParen);
     let operator_offset = tokens
         .next()
@@ -1008,8 +996,8 @@ fn handle_trailing_binary_like_comment<'a>(
 
     let between_operands_range = TextRange::new(left_operand.end(), right_operand.start());
 
-    let mut tokens = SimpleTokenizer::new(source, between_operands_range)
-        .skip_trivia()
+    let mut tokens = comment
+        .non_trivia_tokens(between_operands_range, source)
         .skip_while(|token| token.kind == SimpleTokenKind::RParen);
     let operator_offset = tokens
         .next()
@@ -1088,10 +1076,9 @@ fn handle_trailing_module_comment<'a>(
 ///
 /// Which is not what we want. The work around is to make the `# This should be stick to the statement above`
 /// a trailing comment of the previous statement.
-fn handle_module_level_own_line_comment_before_class_or_function_comment<'a>(
-    comment: DecoratedComment<'a>,
-    source: &str,
-) -> CommentPlacement<'a> {
+fn handle_module_level_own_line_comment_before_class_or_function_comment(
+    comment: DecoratedComment,
+) -> CommentPlacement {
     debug_assert!(comment.enclosing_node().is_module());
     // Only applies for own line comments on the module level...
     if comment.line_position().is_end_of_line() {
@@ -1112,12 +1099,13 @@ fn handle_module_level_own_line_comment_before_class_or_function_comment<'a>(
         return CommentPlacement::Default(comment);
     }
 
-    // Make the comment a leading comment if there's no empty line between the comment and the function / class header
-    if max_empty_lines(&source[TextRange::new(comment.end(), following.start())]) == 0 {
-        CommentPlacement::leading(following, comment)
-    } else {
-        // Otherwise attach the comment as trailing comment to the previous statement
+    // Attach the comment as trailing comment to the previous statement if there's an empty line
+    // between the comment and the function / class header
+    if comment.has_empty_line_after() {
         CommentPlacement::trailing(preceding, comment)
+    } else {
+        // Otherwise make the comment a leading comment
+        CommentPlacement::leading(following, comment)
     }
 }
 
@@ -1335,8 +1323,8 @@ fn handle_dict_unpacking_comment<'a>(
         Some(preceding) => preceding.end(),
         None => comment.enclosing_node().start(),
     };
-    let mut tokens = SimpleTokenizer::new(source, TextRange::new(preceding_end, comment.start()))
-        .skip_trivia()
+    let mut tokens = comment
+        .non_trivia_tokens(TextRange::new(preceding_end, comment.start()), source)
         .skip_while(|token| token.kind == SimpleTokenKind::RParen);
 
     // if the remaining tokens from the previous node are exactly `**`,
@@ -1380,9 +1368,8 @@ fn handle_key_value_comment<'a>(
     // }
     // ```
     // This prevents against detecting comments on starred expressions as key-value comments.
-    let tokens = SimpleTokenizer::new(source, TextRange::new(preceding.end(), following.start()));
-    if tokens
-        .skip_trivia()
+    if comment
+        .non_trivia_tokens(TextRange::new(preceding.end(), following.start()), source)
         .any(|token| token.kind == SimpleTokenKind::Colon)
     {
         CommentPlacement::dangling(comment.enclosing_node(), comment)
@@ -1458,8 +1445,11 @@ fn handle_attribute_comment<'a>(
     //     .attribute
     // )
     // ```
-    if let Some(right_paren) = SimpleTokenizer::starts_at(attribute.value.end(), source)
-        .skip_trivia()
+    if let Some(right_paren) = comment
+        .non_trivia_tokens(
+            TextRange::new(attribute.value.end(), source.text_len()),
+            source,
+        )
         .take_while(|token| token.kind == SimpleTokenKind::RParen)
         .last()
     {
@@ -2089,8 +2079,8 @@ fn handle_import_from_comment<'a>(
         if let Some(SimpleToken {
             kind: SimpleTokenKind::Comma,
             ..
-        }) = SimpleTokenizer::starts_at(comment.start(), source)
-            .skip_trivia()
+        }) = comment
+            .non_trivia_tokens(TextRange::new(comment.start(), source.text_len()), source)
             .next()
         {
             // Treat comments before the comma as dangling, after as trailing (default)
@@ -2376,83 +2366,4 @@ fn handle_trailing_implicit_concatenated_string_comment<'a>(
 fn are_parameters_parenthesized(parameters: &Parameters, contents: &str) -> bool {
     // A lambda never has parentheses around its parameters, but a function definition always does.
     contents[parameters.range()].starts_with('(')
-}
-
-/// Counts the number of empty lines in `contents`.
-fn max_empty_lines(contents: &str) -> u32 {
-    let mut newlines = 0u32;
-    let mut max_new_lines = 0;
-
-    for token in SimpleTokenizer::new(contents, TextRange::up_to(contents.text_len())) {
-        match token.kind() {
-            SimpleTokenKind::Newline => {
-                newlines += 1;
-            }
-
-            SimpleTokenKind::Whitespace => {}
-
-            SimpleTokenKind::Comment => {
-                max_new_lines = newlines.max(max_new_lines);
-                newlines = 0;
-            }
-
-            _ => {
-                max_new_lines = newlines.max(max_new_lines);
-                break;
-            }
-        }
-    }
-
-    max_new_lines = newlines.max(max_new_lines);
-    max_new_lines.saturating_sub(1)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::comments::placement::max_empty_lines;
-
-    #[test]
-    fn count_empty_lines_in_trivia() {
-        assert_eq!(max_empty_lines(""), 0);
-        assert_eq!(max_empty_lines("# trailing comment\n # other comment\n"), 0);
-        assert_eq!(
-            max_empty_lines("# trailing comment\n# own line comment\n"),
-            0
-        );
-        assert_eq!(
-            max_empty_lines("# trailing comment\n\n# own line comment\n"),
-            1
-        );
-
-        assert_eq!(
-            max_empty_lines(
-                "# trailing comment\n\n# own line comment\n\n# an other own line comment"
-            ),
-            1
-        );
-
-        assert_eq!(
-            max_empty_lines(
-                "# trailing comment\n\n# own line comment\n\n# an other own line comment\n# block"
-            ),
-            1
-        );
-
-        assert_eq!(
-            max_empty_lines(
-                "# trailing comment\n\n# own line comment\n\n\n# an other own line comment\n# block"
-            ),
-            2
-        );
-
-        assert_eq!(
-            max_empty_lines(
-                r"# This multiline comments section
-# should be split from the statement
-# above by two lines.
-"
-            ),
-            0
-        );
-    }
 }
