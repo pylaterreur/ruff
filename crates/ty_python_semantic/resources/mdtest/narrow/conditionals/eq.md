@@ -1887,8 +1887,7 @@ def _(x: Literal[1], y: Literal[1, 2]):
     if x == y == 1:
         reveal_type(y)  # revealed: Literal[1]
     else:
-        # TODO: should be `Literal[2]`
-        reveal_type(y)  # revealed: Literal[1, 2]
+        reveal_type(y)  # revealed: Literal[2]
 ```
 
 mypy infers `Literal[2]` in the `else` branch. pyright doesn't narrow chained comparisons.

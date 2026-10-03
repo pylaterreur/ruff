@@ -202,35 +202,33 @@ them do not happen.
 ```py
 def _(a: int):
     (x := 1) < a < (x := 2)
-    # TODO: should be `Literal[1, 2]`
-    reveal_type(x)  # revealed: Literal[2]
+    reveal_type(x)  # revealed: Literal[1, 2]
 
 def _(a: int, b: int, c: int):
     a < (x := 1) < b < (x := 2) < c
-    # TODO: should be `Literal[1, 2]`
-    reveal_type(x)  # revealed: Literal[2]
+    reveal_type(x)  # revealed: Literal[1, 2]
 
 def _(a: int, b: int):
     a < b < (x := 1)
-    # TODO: should emit [possibly-unresolved-reference]
+    # error: [possibly-unresolved-reference]
     reveal_type(x)  # revealed: Literal[1]
 
 def _(a: int, b: int):
     if a < b < (x := 1):
         reveal_type(x)  # revealed: Literal[1]
     else:
-        # TODO: should emit [possibly-unresolved-reference]
+        # error: [possibly-unresolved-reference]
         reveal_type(x)  # revealed: Literal[1]
 
 def _(a: int, b: int):
     if not (a < b < (x := 1)):
-        # TODO: should emit [possibly-unresolved-reference]
+        # error: [possibly-unresolved-reference]
         reveal_type(x)  # revealed: Literal[1]
     else:
         reveal_type(x)  # revealed: Literal[1]
 
 def _(a: int, b: int):
-    # TODO: should emit [possibly-unresolved-reference]
+    # error: [possibly-unresolved-reference]
     (a < b < (x := 1)) or reveal_type(x)  # revealed: Literal[1]
 ```
 

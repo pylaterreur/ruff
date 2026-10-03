@@ -146,8 +146,7 @@ def _(x: int | None):
     if None is not x is not None:
         reveal_type(x)  # revealed: int
     else:
-        # TODO: should be `None`
-        reveal_type(x)  # revealed: int | None
+        reveal_type(x)  # revealed: None
 ```
 
 mypy infers `None` in the `else` branch. pyright doesn't narrow chained comparisons.

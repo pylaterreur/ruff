@@ -41,6 +41,7 @@ use ty_python_core::symbol::Symbol;
 use ty_python_core::{ExpressionNodeKey, NarrowingEvaluator, place_table, semantic_index};
 
 use ruff_db::parsed::{ParsedModuleRef, parsed_module};
+use ruff_python_ast::helpers::any_over_expr;
 use ruff_python_ast::name::Name;
 use ruff_python_stdlib::identifiers::is_identifier;
 
@@ -3522,6 +3523,22 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
             .expect("We should always have a place for every `PlaceExpr`")
     }
 
+    /// Returns whether an assignment expression in `expr` rebinds `place`, or the symbol that
+    /// `place` is a member of.
+    fn is_rebound_by(&self, place: ScopedPlaceId, expr: &ast::Expr) -> bool {
+        let places = self.places();
+        let root = places.parents(places.place(place)).last().unwrap_or(place);
+        let ScopedPlaceId::Symbol(symbol) = root else {
+            return false;
+        };
+        let name = places.symbol(symbol).name();
+        any_over_expr(expr, |expr| {
+            expr.as_named_expr()
+                .and_then(|named| named.target.as_name_expr())
+                .is_some_and(|target| target.id == *name)
+        })
+    }
+
     /// Check if a type is directly narrowable by `len()` (without considering unions or intersections).
     ///
     /// In order for this to return `true`, we must know that the truthiness of the object returned by
@@ -4108,11 +4125,17 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
             return None;
         }
 
-        if !is_positive && ops.len() > 1 {
-            // We can't negate a constraint made by a multi-comparator expression, since we can't
-            // know which comparison part is the one being negated.
-            // For example, the negation of  `x is 1 is y is 2`, would be `(x is not 1) or (y is not 1) or (y is not 2)`
-            // and that requires cross-symbol constraints, which we don't support yet.
+        // A negated chain only narrows a place that every comparison narrows (see below), and
+        // ordering comparisons don't narrow anything.
+        let is_negated_chain = !is_positive && ops.len() > 1;
+        if is_negated_chain
+            && ops.iter().any(|op| {
+                matches!(
+                    op,
+                    ast::CmpOp::Lt | ast::CmpOp::LtE | ast::CmpOp::Gt | ast::CmpOp::GtE
+                )
+            })
+        {
             return None;
         }
 
@@ -4400,8 +4423,27 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
         };
         let mut last_rhs_ty: Option<Type> = None;
 
-        for (left, op, right) in expr_compare.iter() {
-            let lhs_ty = last_rhs_ty.unwrap_or_else(|| expression_type(left, &self.env));
+        // `a < b < c` is evaluated like `a < b and b < c`, except that `b` is only evaluated once.
+        // Like a negated `and`, a negated chain only narrows a place that every comparison narrows
+        // when negated on its own, to the union of those types.
+        let mut negated_chain_constraints: Option<NarrowingConstraints<'db>> = None;
+        let mut comparison_constraints = NarrowingConstraints::default();
+
+        for (index, (left, op, right)) in expr_compare.iter().enumerate() {
+            let constraints = if is_negated_chain {
+                &mut comparison_constraints
+            } else {
+                // An assignment expression in `right` rebinds its target before this comparison
+                // runs, so the earlier comparisons narrowed the previous binding.
+                if index > 0 && any_over_expr(right, ast::Expr::is_named_expr) {
+                    constraints.retain(|place, _| !self.is_rebound_by(*place, right));
+                }
+                &mut constraints
+            };
+            let lhs_ty = match last_rhs_ty {
+                Some(narrowed_lhs_ty) if !is_negated_chain => narrowed_lhs_ty,
+                _ => expression_type(left, &self.env),
+            };
             let rhs_ty = expression_type(right, &self.env);
             let lhs_narrowing_rhs_ty = if matches!(op, ast::CmpOp::In | ast::CmpOp::NotIn) {
                 self.inline_membership_rhs_type(right, inference)
@@ -4525,8 +4567,31 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
             } else {
                 last_rhs_ty = Some(rhs_ty);
             }
+
+            if is_negated_chain {
+                let merged = match negated_chain_constraints.take() {
+                    Some(mut merged) => {
+                        merge_constraints_or(
+                            &mut merged,
+                            std::mem::take(&mut comparison_constraints),
+                        );
+                        merged
+                    }
+                    None => std::mem::take(&mut comparison_constraints),
+                };
+                // The remaining comparisons can't narrow a place that this one doesn't narrow.
+                if merged.is_empty() {
+                    return None;
+                }
+                negated_chain_constraints = Some(merged);
+            }
         }
-        Some(constraints)
+
+        if is_negated_chain {
+            negated_chain_constraints
+        } else {
+            Some(constraints)
+        }
     }
 
     fn evaluate_expr_call(

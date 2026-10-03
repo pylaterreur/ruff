@@ -387,8 +387,7 @@ def _(x: int | None):
     if None is x is None:
         reveal_type(x)  # revealed: None
     else:
-        # TODO: should be `int`
-        reveal_type(x)  # revealed: int | None
+        reveal_type(x)  # revealed: int
 ```
 
 mypy infers `int` in the `else` branch. pyright doesn't narrow chained comparisons.
@@ -407,15 +406,13 @@ def _():
     if (x := f()) is None is (x := f()):
         reveal_type(x)  # revealed: None
     else:
-        # TODO: should be `int`
-        reveal_type(x)  # revealed: int | None
+        reveal_type(x)  # revealed: int
 
 def _():
     if (x := g()) is None is (x := f()):
         reveal_type(x)  # revealed: None
     else:
-        # TODO: should be `str | int`
-        reveal_type(x)  # revealed: int | None
+        reveal_type(x)  # revealed: str | int
 ```
 
 In the `if` branch, the first comparison narrows the first binding, which the second assignment then
@@ -424,8 +421,7 @@ replaces:
 ```py
 def _():
     if (x := f()) is None is not (x := f()):
-        # TODO: should be `int`
-        reveal_type(x)  # revealed: Never
+        reveal_type(x)  # revealed: int
     else:
         reveal_type(x)  # revealed: int | None
 
@@ -434,8 +430,7 @@ class C:
 
 def _(c: C):
     if c.a is None is not (c := C()).a:
-        # TODO: should be `int`
-        reveal_type(c.a)  # revealed: Never
+        reveal_type(c.a)  # revealed: int
     else:
         reveal_type(c.a)  # revealed: int | None
 ```

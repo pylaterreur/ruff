@@ -1359,6 +1359,10 @@ impl<'db, 'ast> SemanticIndexBuilder<'db, 'ast> {
             ast::Expr::BoolOp(_) => self
                 .condition_flow_snapshots_by_node
                 .remove(&ExpressionNodeKey::from(expr)),
+            // A single comparison can't skip any operands.
+            ast::Expr::Compare(compare) if compare.ops.len() > 1 => self
+                .condition_flow_snapshots_by_node
+                .remove(&ExpressionNodeKey::from(expr)),
             ast::Expr::UnaryOp(unary_op) if unary_op.op == ast::UnaryOp::Not => {
                 let snapshots = self.take_condition_flow_snapshots(&unary_op.operand)?;
                 Some(ConditionFlowSnapshots {
@@ -3662,16 +3666,7 @@ impl<'db, 'ast> SemanticIndexBuilder<'db, 'ast> {
                         || !Self::condition_evaluation_is_known_safe(&unary.operand),
                 );
             }
-            ast::Expr::Compare(compare) => {
-                self.visit_expr(compare.first_operand());
-                for (_, op, right) in compare.iter() {
-                    self.visit_expr(right);
-                    self.record_exception_checkpoint_if(!matches!(
-                        op,
-                        ast::CmpOp::Is | ast::CmpOp::IsNot
-                    ));
-                }
-            }
+            ast::Expr::Compare(compare) => self.visit_compare_expression(compare),
             ast::Expr::BoolOp(node) => self.visit_bool_expression(node, context),
             ast::Expr::StringLiteral(_) => {
                 walk_expr(self, expr);
@@ -3725,6 +3720,57 @@ impl<'db, 'ast> SemanticIndexBuilder<'db, 'ast> {
             .record_range_reachability(orelse.range(), in_type_checking_block);
         self.visit_expr_with_context(orelse, context);
         self.flow_merge(post_body);
+    }
+
+    /// Visits a comparison, keeping short-circuit flow snapshots out of the common recursive
+    /// expression-visitor frame.
+    ///
+    /// A chain such as `a < b < c` is evaluated like `a < b and b < c`, except that `b` is only
+    /// evaluated once: if a comparison is false, the remaining operands are skipped. If one of
+    /// them contains an assignment expression, this records separate truthy and falsy flow states,
+    /// like a boolean operation.
+    fn visit_compare_expression(&mut self, node: &'ast ast::ExprCompare) {
+        let has_skippable_assignment = node
+            .operands
+            .iter()
+            .skip(2)
+            .any(|operand| any_over_expr(operand, &ast::Expr::is_named_expr));
+        let mut short_circuits = vec![];
+
+        self.visit_expr(node.first_operand());
+        for (index, (_, op, right)) in node.iter().enumerate() {
+            if has_skippable_assignment && index > 0 {
+                // The previous comparison can be false and skip the rest of the chain.
+                short_circuits.push(self.flow_snapshot());
+            }
+            self.visit_expr(right);
+            self.record_exception_checkpoint_if(!matches!(op, ast::CmpOp::Is | ast::CmpOp::IsNot));
+        }
+
+        if !has_skippable_assignment {
+            return;
+        }
+        let mut short_circuits = short_circuits.into_iter();
+        let Some(first_short_circuit) = short_circuits.next() else {
+            return;
+        };
+
+        // The chain is only truthy if every comparison ran.
+        let truthy = self.flow_snapshot();
+        self.flow_restore(first_short_circuit);
+        for short_circuit in short_circuits {
+            self.flow_merge(short_circuit);
+        }
+        // Unlike the operands of `and`, the comparisons in a chain have no predicates of their
+        // own, so it's unknown whether the chain stops early.
+        self.record_ambiguous_reachability();
+        // The chain is falsy if any comparison was false, including the last one.
+        self.flow_merge(truthy.clone());
+        let falsy = self.flow_snapshot();
+        self.condition_flow_snapshots_by_node.insert(
+            ExpressionNodeKey::from(ast::ExprRef::Compare(node)),
+            ConditionFlowSnapshots { truthy, falsy },
+        );
     }
 
     /// Keeps short-circuit flow snapshots out of the common recursive expression-visitor frame.
