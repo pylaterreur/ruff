@@ -922,12 +922,8 @@ any Python version. An `else` branch can define the type variables used at runti
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # TODO: no error
-    # error: [invalid-legacy-type-variable]
-    U = TypeVar("U", default=int)
-    # TODO: no error
-    # error: [invalid-legacy-type-variable]
-    V = TypeVar("V", infer_variance=True)
+    U = TypeVar("U", default=int)  # no diagnostic
+    V = TypeVar("V", infer_variance=True)  # no diagnostic
 else:
     U = TypeVar("U")
     V = TypeVar("V")

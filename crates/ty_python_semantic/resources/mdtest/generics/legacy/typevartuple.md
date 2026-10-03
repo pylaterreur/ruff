@@ -256,15 +256,9 @@ python-version = "3.14"
 from typing import TYPE_CHECKING, TypeVarTuple
 
 if TYPE_CHECKING:
-    # TODO: no error
-    # error: [invalid-legacy-type-variable]
-    Ts_Co = TypeVarTuple("Ts_Co", covariant=True)
-    # TODO: no error
-    # error: [invalid-legacy-type-variable]
-    Ts_Contra = TypeVarTuple("Ts_Contra", contravariant=True)
-    # TODO: no error
-    # error: [invalid-legacy-type-variable]
-    Ts_Inferred = TypeVarTuple("Ts_Inferred", infer_variance=True)
+    Ts_Co = TypeVarTuple("Ts_Co", covariant=True)  # no diagnostic
+    Ts_Contra = TypeVarTuple("Ts_Contra", contravariant=True)  # no diagnostic
+    Ts_Inferred = TypeVarTuple("Ts_Inferred", infer_variance=True)  # no diagnostic
 ```
 
 ### Variance in method signatures

@@ -148,7 +148,8 @@ impl<'db> TypeInferenceBuilder<'db, '_> {
         let mut extra_items = None;
         let supports_pep_728 = self.in_stub()
             || typed_dict_module == TypingModule::TypingExtensions
-            || self.program_environment().python_version(db) >= PythonVersion::PY315;
+            || self.program_environment().python_version(db) >= PythonVersion::PY315
+            || self.is_in_type_checking_block(self.scope(), call_expr);
 
         for kw in keywords {
             let Some(arg) = &kw.arg else {

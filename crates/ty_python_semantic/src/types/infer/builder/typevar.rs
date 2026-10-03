@@ -775,7 +775,9 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
         let db = self.db();
         let arguments = &call_expr.arguments;
         let is_typing_extensions = known_class == KnownClass::ExtensionsTypeVarTuple;
-        let assume_all_features = self.in_stub() || is_typing_extensions;
+        let assume_all_features = self.in_stub()
+            || is_typing_extensions
+            || self.is_in_type_checking_block(self.scope(), call_expr);
 
         let mut default = None;
         let mut covariant = false;
@@ -1046,7 +1048,9 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
         let db = self.db();
         let arguments = &call_expr.arguments;
         let is_typing_extensions = known_class == KnownClass::ExtensionsParamSpec;
-        let assume_all_features = self.in_stub() || is_typing_extensions;
+        let assume_all_features = self.in_stub()
+            || is_typing_extensions
+            || self.is_in_type_checking_block(self.scope(), call_expr);
 
         let mut default = None;
         let mut covariant = false;
@@ -1296,7 +1300,9 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
         let db = self.db();
         let arguments = &call_expr.arguments;
         let is_typing_extensions = known_class == KnownClass::ExtensionsTypeVar;
-        let assume_all_features = self.in_stub() || is_typing_extensions;
+        let assume_all_features = self.in_stub()
+            || is_typing_extensions
+            || self.is_in_type_checking_block(self.scope(), call_expr);
 
         let mut has_bound = false;
         let mut default = None;

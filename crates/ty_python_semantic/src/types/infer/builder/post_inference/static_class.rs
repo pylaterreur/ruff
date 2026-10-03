@@ -748,7 +748,11 @@ pub(crate) fn check_static_class_definitions<'db>(
         if class_kind == Some(CodeGeneratorKind::TypedDict) {
             let supports_pep_728 = context.in_stub()
                 || class.typed_dict_module(db) == Some(TypingModule::TypingExtensions)
-                || env.python_version(db) >= PythonVersion::PY315;
+                || env.python_version(db) >= PythonVersion::PY315
+                || index.is_in_type_checking_block(
+                    context.scope().file_scope_id(db),
+                    class_node.range(),
+                );
 
             for keyword in &args.keywords {
                 if !supports_pep_728

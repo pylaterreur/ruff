@@ -7783,19 +7783,11 @@ FunctionalStubExtra = TypedDict("FunctionalStubExtra", {}, extra_items=int)
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    # TODO: no error
-    # error: [unknown-argument]
-    class TypeCheckingClosed(TypedDict, closed=True): ...
-    # TODO: no error
-    # error: [unknown-argument]
-    class TypeCheckingExtra(TypedDict, extra_items=int): ...
+    class TypeCheckingClosed(TypedDict, closed=True): ...  # no diagnostic
+    class TypeCheckingExtra(TypedDict, extra_items=int): ...  # no diagnostic
 
-    # TODO: no error
-    # error: [unknown-argument]
-    FunctionalTypeCheckingClosed = TypedDict("FunctionalTypeCheckingClosed", {}, closed=True)
-    # TODO: no error
-    # error: [unknown-argument]
-    FunctionalTypeCheckingExtra = TypedDict("FunctionalTypeCheckingExtra", {}, extra_items=int)
+    FunctionalTypeCheckingClosed = TypedDict("FunctionalTypeCheckingClosed", {}, closed=True)  # no diagnostic
+    FunctionalTypeCheckingExtra = TypedDict("FunctionalTypeCheckingExtra", {}, extra_items=int)  # no diagnostic
 ```
 
 ### Python 3.15 support for `closed` and `extra_items`

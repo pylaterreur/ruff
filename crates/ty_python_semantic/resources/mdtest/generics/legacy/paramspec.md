@@ -425,9 +425,7 @@ Code in an `if TYPE_CHECKING:` block is never executed, so it can use the `defau
 from typing import TYPE_CHECKING, ParamSpec
 
 if TYPE_CHECKING:
-    # TODO: no error
-    # error: [invalid-paramspec]
-    P = ParamSpec("P", default=[int, str])
+    P = ParamSpec("P", default=[int, str])  # no diagnostic
 ```
 
 ### `typing_extensions.ParamSpec` defaults specialize generic classes
