@@ -4640,6 +4640,87 @@ def _(flag: bool):
     mod.global_symbol = 1
 ```
 
+### Replacing module-level functions
+
+A module-level function can be replaced with another function that has a compatible signature, as
+can [an ordinary method on a class](#allow-replacing-ordinary-methods-with-compatible-functions). As
+with methods, reads of the attribute still use the type of the original function. As of mypy 2.4.0
+and pyright 1.1.414, mypy also accepts compatible replacements and rejects incompatible ones, while
+pyright does not check assignments to attributes of imported modules.
+
+`greetings.py`:
+
+```py
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+```
+
+```py
+import greetings
+
+def greet_loudly(name: str) -> str:
+    return f"HELLO, {name.upper()}!"
+
+def name_length(name: str) -> int:
+    return len(name)
+
+# TODO: no error
+# error: [invalid-assignment]
+greetings.greet = greet_loudly
+reveal_type(greetings.greet)  # revealed: def greet(name: str) -> str
+
+# error: [invalid-assignment] "Object of type `def name_length(name: str) -> int` is not assignable to attribute `greet` of type `def greet(name: str) -> str`"
+greetings.greet = name_length
+```
+
+### Replacing `Final` module-level functions
+
+A `Final` attribute keeps the type of the function it refers to, so it cannot be replaced:
+
+`greetings.py`:
+
+```py
+from typing import Final
+
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+GREET: Final = greet
+```
+
+```py
+import greetings
+
+def greet_loudly(name: str) -> str:
+    return f"HELLO, {name.upper()}!"
+
+greetings.GREET = greet_loudly  # error: [invalid-assignment]
+```
+
+### Replacing `warnings.showwarning`
+
+Some standard-library modules document replacing one of their functions as a way to customize their
+behavior, such as `warnings.showwarning`:
+
+```py
+import warnings
+from typing import TextIO
+
+def showwarning(
+    message: Warning | str,
+    category: type[Warning],
+    filename: str,
+    lineno: int,
+    file: TextIO | None = None,
+    line: str | None = None,
+) -> None:
+    print(message)
+
+# TODO: no error
+# error: [invalid-assignment]
+warnings.showwarning = showwarning
+```
+
 ## Literal types
 
 ### Function-literal attributes
