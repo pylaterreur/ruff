@@ -18,7 +18,8 @@ ruff_text_size = { workspace = true }
 anyhow = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
+# Notebooks are written back after edits, so floats in cell outputs must round-trip exactly.
+serde_json = { workspace = true, features = ["float_roundtrip"] }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 

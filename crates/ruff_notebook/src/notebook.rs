@@ -873,6 +873,7 @@ print("after empty cells")
 
     #[test_case("vscode_language_id.ipynb")]
     #[test_case("kernelspec_language.ipynb")]
+    #[test_case("output_floats.ipynb")]
     fn round_trip(filename: &str) {
         let path = notebook_path(filename);
         let expected = std::fs::read_to_string(&path).unwrap();
