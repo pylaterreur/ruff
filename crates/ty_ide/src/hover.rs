@@ -3653,18 +3653,17 @@ def ab(a: int, *, c: int):
             .source("lib/sub.py", "'''The lib.sub module.'''")
             .build();
 
-        // TODO: should show the docstring of `lib/__init__.py`
         assert_snapshot!(test.hover(), @"
         <module 'lib'>
         ---------------------------------------------
-        The lib.sub module.
+        The lib package.
 
         ---------------------------------------------
         ```xml
         <module 'lib'>
         ```
         ---
-        The lib.sub module.
+        The lib package.
         ---------------------------------------------
         info[hover]: Hovered content is
          --> main.py:4:1

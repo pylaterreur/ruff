@@ -644,8 +644,18 @@ fn resolve_definition_recursive<'db>(
             }
 
             // Get the full module name being imported
-            let Some(module_name) = ModuleName::new(&alias.name) else {
+            let Some(full_module_name) = ModuleName::new(&alias.name) else {
                 return Vec::new(); // Invalid module name, return empty list
+            };
+
+            // `import a.b.c` binds the name `a` to the top-level package, while
+            // `import a.b.c as d` binds `d` to the `a.b.c` module itself.
+            let module_name = if alias.asname.is_none()
+                && let Some(top_level_name) = ModuleName::new(full_module_name.first_component())
+            {
+                top_level_name
+            } else {
+                full_module_name
             };
 
             // Resolve the module to its file

@@ -431,7 +431,6 @@ x = mypack<CURSOR>age.module_a
             .source("mypackage/module_a.py", "class Test: ...")
             .build();
 
-        // TODO: should find `mypackage/__init__.py`
         assert_snapshot!(test.goto_definition(), @"
         info[goto-definition]: Go to definition
          --> main.py:3:5
@@ -439,9 +438,9 @@ x = mypack<CURSOR>age.module_a
         3 | x = mypackage.module_a
           |     ^^^^^^^^^ Clicking here
         info: Found 1 definition
-         --> mypackage/module_a.py:1:1
+         --> mypackage/__init__.py:1:1
           |
-        1 | class Test: ...
+        1 | class Package: ...
           | -
         ");
     }

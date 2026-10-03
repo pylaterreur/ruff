@@ -390,7 +390,6 @@ FOO = 0
             .build();
 
         // `import mymodule.submodule` binds `mymodule`, the package
-        // TODO: should find `mymodule/__init__.py`
         assert_snapshot!(test.goto_declaration(), @"
         info[goto-declaration]: Go to declaration
          --> main.py:3:7
@@ -398,7 +397,7 @@ FOO = 0
         3 | print(mymodule.submodule.FOO)
           |       ^^^^^^^^ Clicking here
         info: Found 1 declaration
-         --> mymodule/submodule.py:1:1
+         --> mymodule/__init__.py:1:1
           |
         1 |
           | -
