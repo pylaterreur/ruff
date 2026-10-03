@@ -4664,12 +4664,10 @@ def greet_loudly(name: str) -> str:
 def name_length(name: str) -> int:
     return len(name)
 
-# TODO: no error
-# error: [invalid-assignment]
-greetings.greet = greet_loudly
+greetings.greet = greet_loudly  # no diagnostic
 reveal_type(greetings.greet)  # revealed: def greet(name: str) -> str
 
-# error: [invalid-assignment] "Object of type `def name_length(name: str) -> int` is not assignable to attribute `greet` of type `def greet(name: str) -> str`"
+# error: [invalid-assignment] "Object of type `def name_length(name: str) -> int` is not assignable to attribute `greet` of type `(name: str) -> str`"
 greetings.greet = name_length
 ```
 
@@ -4716,9 +4714,7 @@ def showwarning(
 ) -> None:
     print(message)
 
-# TODO: no error
-# error: [invalid-assignment]
-warnings.showwarning = showwarning
+warnings.showwarning = showwarning  # no diagnostic
 ```
 
 ## Literal types

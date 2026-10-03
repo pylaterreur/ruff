@@ -396,6 +396,20 @@ pub(super) fn attribute_write_requirement<'db>(
                     .map_or_else(|_| Place::Undefined.into(), |member| member.member(db))
             };
             AttributeWriteRequirement::Module(match symbol.place {
+                // A function-literal type identifies one specific function, so no other function
+                // would be assignable to it. As we do for ordinary methods on classes, accept any
+                // function with a compatible signature instead, which allows replacing hooks such
+                // as `warnings.showwarning`. This only widens the type that writes are checked
+                // against: the attribute itself keeps its function-literal type. `Final`
+                // attributes are not widened, since they must not be reassigned.
+                Place::Defined(DefinedPlace {
+                    ty: Type::FunctionLiteral(function),
+                    ..
+                }) if !symbol.qualifiers.contains(TypeQualifiers::FINAL)
+                    && function.callable_type_kind(db) == CallableTypeKind::FunctionLike =>
+                {
+                    Some(Type::Callable(function.into_callable_type(db)))
+                }
                 Place::Defined(DefinedPlace { ty, .. }) => Some(ty),
                 Place::Undefined => None,
             })
