@@ -417,6 +417,35 @@ def my_function(): ...
         ");
     }
 
+    #[test]
+    fn goto_definition_package_imported_with_submodule() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mypackage.module_a
+x = mypack<CURSOR>age.module_a
+",
+            )
+            .source("mypackage/__init__.py", "class Package: ...")
+            .source("mypackage/module_a.py", "class Test: ...")
+            .build();
+
+        // TODO: should find `mypackage/__init__.py`
+        assert_snapshot!(test.goto_definition(), @"
+        info[goto-definition]: Go to definition
+         --> main.py:3:5
+          |
+        3 | x = mypackage.module_a
+          |     ^^^^^^^^^ Clicking here
+        info: Found 1 definition
+         --> mypackage/module_a.py:1:1
+          |
+        1 | class Test: ...
+          | -
+        ");
+    }
+
     /// goto-definition on a function call should go to the .py not the .pyi
     #[test]
     fn goto_definition_stub_map_function() {

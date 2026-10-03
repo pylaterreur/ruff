@@ -366,6 +366,46 @@ FOO = 0
     }
 
     #[test]
+    fn goto_declaration_import_submodule_without_as() {
+        let test = CursorTest::builder()
+            .source(
+                "main.py",
+                "
+import mymodule.submodule
+print(<CURSOR>mymodule.submodule.FOO)
+",
+            )
+            .source(
+                "mymodule/__init__.py",
+                "
+# Main module init
+",
+            )
+            .source(
+                "mymodule/submodule.py",
+                r#"
+FOO = 0
+"#,
+            )
+            .build();
+
+        // `import mymodule.submodule` binds `mymodule`, the package
+        // TODO: should find `mymodule/__init__.py`
+        assert_snapshot!(test.goto_declaration(), @"
+        info[goto-declaration]: Go to declaration
+         --> main.py:3:7
+          |
+        3 | print(mymodule.submodule.FOO)
+          |       ^^^^^^^^ Clicking here
+        info: Found 1 declaration
+         --> mymodule/submodule.py:1:1
+          |
+        1 |
+          | -
+        ");
+    }
+
+    #[test]
     fn goto_declaration_from_import_rhs_is_module() {
         let test = CursorTest::builder()
             .source("lib/__init__.py", r#""#)

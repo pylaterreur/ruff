@@ -3638,6 +3638,46 @@ def ab(a: int, *, c: int):
     }
 
     #[test]
+    fn hover_package_imported_with_submodule() {
+        let test = CursorTest::builder()
+            .snapshot_filter("  \n", "<HB>\n")
+            .source(
+                "main.py",
+                r#"
+            import lib.sub
+
+            li<CURSOR>b.sub
+            "#,
+            )
+            .source("lib/__init__.py", "'''The lib package.'''")
+            .source("lib/sub.py", "'''The lib.sub module.'''")
+            .build();
+
+        // TODO: should show the docstring of `lib/__init__.py`
+        assert_snapshot!(test.hover(), @"
+        <module 'lib'>
+        ---------------------------------------------
+        The lib.sub module.
+
+        ---------------------------------------------
+        ```xml
+        <module 'lib'>
+        ```
+        ---
+        The lib.sub module.
+        ---------------------------------------------
+        info[hover]: Hovered content is
+         --> main.py:4:1
+          |
+        4 | lib.sub
+          | ^^-
+          | | |
+          | | Cursor offset
+          | source
+        ");
+    }
+
+    #[test]
     fn hover_nonlocal_binding() {
         let test = hover_test(
             r#"
