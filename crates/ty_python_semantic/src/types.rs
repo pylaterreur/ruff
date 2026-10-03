@@ -19,6 +19,8 @@ use ruff_db::diagnostic::{Annotation, Diagnostic, Span, UnifiedFile};
 use ruff_db::parsed::parsed_module;
 use ruff_python_ast as ast;
 use ruff_python_ast::name::Name;
+use ruff_python_ast::str::TripleQuotes;
+use ruff_python_literal::escape::UnicodeEscape;
 use ruff_text_size::Ranged;
 use smallvec::smallvec_inline;
 use ty_module_resolver::{
@@ -10292,10 +10294,25 @@ impl<'db> Type<'db> {
                 }
                 LiteralValueTypeKind::Bool(true) => Type::string_literal(db, "True"),
                 LiteralValueTypeKind::Bool(false) => Type::string_literal(db, "False"),
-                LiteralValueTypeKind::String(literal) => Type::string_literal(
-                    db,
-                    compact_str::format_compact!("'{}'", literal.value(db).escape_default()),
-                ),
+                LiteralValueTypeKind::String(literal) => {
+                    let value = literal.value(db);
+                    // `repr()` escapes the characters that the running Python's Unicode database
+                    // considers non-printable. Above U+00FF, that depends on the Unicode version,
+                    // which differs between Python versions. Latin-1 characters have the same
+                    // printability in every version, so the exact result is only known for them.
+                    // Otherwise, as for `repr()` of any `LiteralString`, the result is a
+                    // `LiteralString`.
+                    if value.chars().all(|ch| ch <= '\u{ff}') {
+                        Type::string_literal(
+                            db,
+                            UnicodeEscape::new_repr(value)
+                                .str_repr(TripleQuotes::No)
+                                .to_compact_string(),
+                        )
+                    } else {
+                        Type::literal_string()
+                    }
+                }
                 LiteralValueTypeKind::LiteralString => Type::literal_string(),
                 _ => KnownClass::Str.to_instance(db, env),
             },
