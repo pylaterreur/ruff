@@ -411,6 +411,25 @@ P4 = ExtParamSpec("P4", default=P3)
 P5 = ExtParamSpec("P5", default=int)
 ```
 
+### `default` parameter in an `if TYPE_CHECKING:` block
+
+```toml
+[environment]
+python-version = "3.12"
+```
+
+Code in an `if TYPE_CHECKING:` block is never executed, so it can use the `default` parameter of
+`typing.ParamSpec` in Python 3.12 and earlier.
+
+```py
+from typing import TYPE_CHECKING, ParamSpec
+
+if TYPE_CHECKING:
+    # TODO: no error
+    # error: [invalid-paramspec]
+    P = ParamSpec("P", default=[int, str])
+```
+
 ### `typing_extensions.ParamSpec` defaults specialize generic classes
 
 ```toml

@@ -915,6 +915,27 @@ from typing import TypeVar
 T = TypeVar("T", default=int)
 ```
 
+Code in an `if TYPE_CHECKING:` block is never executed either, so it can also use these features on
+any Python version. An `else` branch can define the type variables used at runtime:
+
+```py
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # TODO: no error
+    # error: [invalid-legacy-type-variable]
+    U = TypeVar("U", default=int)
+    # TODO: no error
+    # error: [invalid-legacy-type-variable]
+    V = TypeVar("V", infer_variance=True)
+else:
+    U = TypeVar("U")
+    V = TypeVar("V")
+```
+
+As of pyright 1.1.414, pyright still reports `default` in an `if TYPE_CHECKING:` block, though not
+in a stub file, while mypy 2.4.0 accepts `default` on any Python version.
+
 #### For `typing_extensions.TypeVar`
 
 `typing_extensions.TypeVar` always supports the latest features, on any Python version.

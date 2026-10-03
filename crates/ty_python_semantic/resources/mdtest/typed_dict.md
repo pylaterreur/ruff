@@ -7729,8 +7729,8 @@ class Quux(TypedDict, closed=1 == 1): ...  # error: [invalid-argument-type]
 ### Python-version support for `closed` and `extra_items`
 
 The PEP 728 keyword arguments are only available on the standard-library `TypedDict` starting in
-Python 3.15. On older Python versions, they can be used with `typing_extensions.TypedDict` or in
-stub files.
+Python 3.15. On older Python versions, they can be used with `typing_extensions.TypedDict`, in stub
+files, or in `if TYPE_CHECKING:` blocks, which are never executed.
 
 ```toml
 [environment]
@@ -7775,6 +7775,27 @@ class StubExtra(TypedDict, extra_items=int): ...
 
 FunctionalStubClosed = TypedDict("FunctionalStubClosed", {}, closed=True)
 FunctionalStubExtra = TypedDict("FunctionalStubExtra", {}, extra_items=int)
+```
+
+`type_checking.py`:
+
+```py
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    # TODO: no error
+    # error: [unknown-argument]
+    class TypeCheckingClosed(TypedDict, closed=True): ...
+    # TODO: no error
+    # error: [unknown-argument]
+    class TypeCheckingExtra(TypedDict, extra_items=int): ...
+
+    # TODO: no error
+    # error: [unknown-argument]
+    FunctionalTypeCheckingClosed = TypedDict("FunctionalTypeCheckingClosed", {}, closed=True)
+    # TODO: no error
+    # error: [unknown-argument]
+    FunctionalTypeCheckingExtra = TypedDict("FunctionalTypeCheckingExtra", {}, extra_items=int)
 ```
 
 ### Python 3.15 support for `closed` and `extra_items`

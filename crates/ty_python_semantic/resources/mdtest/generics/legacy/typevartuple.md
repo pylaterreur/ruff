@@ -242,6 +242,31 @@ Ts_Contra = TypeVarTuple("Ts_Contra", contravariant=True)
 Ts_Inferred = TypeVarTuple("Ts_Inferred", infer_variance=True)
 ```
 
+#### `if TYPE_CHECKING:` blocks
+
+Code in an `if TYPE_CHECKING:` block is never executed, so it can use the variance parameters of
+`typing.TypeVarTuple` on older Python versions.
+
+```toml
+[environment]
+python-version = "3.14"
+```
+
+```py
+from typing import TYPE_CHECKING, TypeVarTuple
+
+if TYPE_CHECKING:
+    # TODO: no error
+    # error: [invalid-legacy-type-variable]
+    Ts_Co = TypeVarTuple("Ts_Co", covariant=True)
+    # TODO: no error
+    # error: [invalid-legacy-type-variable]
+    Ts_Contra = TypeVarTuple("Ts_Contra", contravariant=True)
+    # TODO: no error
+    # error: [invalid-legacy-type-variable]
+    Ts_Inferred = TypeVarTuple("Ts_Inferred", infer_variance=True)
+```
+
 ### Variance in method signatures
 
 A tuple is covariant in its unpacked type variables. Returning `tuple[*Ts]` therefore uses `Ts`
