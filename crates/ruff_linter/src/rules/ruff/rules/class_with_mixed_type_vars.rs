@@ -11,7 +11,7 @@ use crate::checkers::ast::Checker;
 use crate::codes::Category;
 use crate::fix::edits::{Parentheses, remove_argument};
 use crate::rules::pyupgrade::rules::pep695::{
-    DisplayTypeVars, TypeParamKind, TypeVar, expr_name_to_type_var, find_generic,
+    DisplayTypeVars, TypeParamKind, TypeVar, TypeVarLookup, expr_name_to_type_var, find_generic,
 };
 use crate::{Edit, Fix, FixAvailability, Violation};
 use ruff_python_ast::PythonVersion;
@@ -210,7 +210,12 @@ fn generic_arguments_to_type_vars<'a>(
             continue;
         }
 
-        let type_var = expr_name_to_type_var(semantic, name)?;
+        // There's no fix if the type variable can't be resolved, or if it has unpacked keyword
+        // arguments, like `TypeVar("T", **kwargs)`, because the fix would drop any bound or
+        // default passed this way.
+        let TypeVarLookup::Resolved(type_var) = expr_name_to_type_var(semantic, name) else {
+            return None;
+        };
 
         if !type_var_is_valid(&type_var, unpacked) {
             return None;

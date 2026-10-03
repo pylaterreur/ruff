@@ -401,51 +401,71 @@ RUF053 Class with type parameter list inherits from `Generic`
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: Remove `Generic` base class
 
-RUF053 [*] Class with type parameter list inherits from `Generic`
-  --> RUF053.py:91:12
+RUF053 Class with type parameter list inherits from `Generic`
+  --> RUF053.py:89:12
    |
-89 | # as named expressions are forbidden within type parameter lists.
-90 | # See also the `_Z` example above.
-91 | class C[T](Generic[_G]): ...  # Should be moved down below eventually
+87 | # The fix would drop the bound passed in `_J`'s unpacked keyword arguments.
+88 | _J = TypeVar('_J', **{'bound': int})
+89 | class C[T](Generic[_J]): ...
+   |            ^^^^^^^^^^^
+90 | class C[T](Generic[_A, _J]): ...
+   |
+help: Remove `Generic` base class
+
+RUF053 Class with type parameter list inherits from `Generic`
+  --> RUF053.py:90:12
+   |
+88 | _J = TypeVar('_J', **{'bound': int})
+89 | class C[T](Generic[_J]): ...
+90 | class C[T](Generic[_A, _J]): ...
+   |            ^^^^^^^^^^^^^^^
+help: Remove `Generic` base class
+
+RUF053 [*] Class with type parameter list inherits from `Generic`
+  --> RUF053.py:97:12
+   |
+95 | # as named expressions are forbidden within type parameter lists.
+96 | # See also the `_Z` example above.
+97 | class C[T](Generic[_G]): ...  # Should be moved down below eventually
    |            ^^^^^^^^^^^
 help: Remove `Generic` base class
    |
-90 | # See also the `_Z` example above.
+96 | # See also the `_Z` example above.
    - class C[T](Generic[_G]): ...  # Should be moved down below eventually
-91 + class C[T, _G: (str, a := int)]: ...  # Should be moved down below eventually
-92 |
+97 + class C[T, _G: (str, a := int)]: ...  # Should be moved down below eventually
+98 |
    |
 note: This is an unsafe fix and may change runtime behavior
 
 RUF053 [*] Class with type parameter list inherits from `Generic`
-  --> RUF053.py:95:20
-   |
-94 | # Single-element constraints should not be converted to a bound.
-95 | class C[T: (str,)](Generic[_A]): ...
-   |                    ^^^^^^^^^^^
-96 | class C[T: [a]](Generic[_A]): ...
-   |
+   --> RUF053.py:101:20
+    |
+100 | # Single-element constraints should not be converted to a bound.
+101 | class C[T: (str,)](Generic[_A]): ...
+    |                    ^^^^^^^^^^^
+102 | class C[T: [a]](Generic[_A]): ...
+    |
 help: Remove `Generic` base class
-   |
-94 | # Single-element constraints should not be converted to a bound.
-   - class C[T: (str,)](Generic[_A]): ...
-95 + class C[T: (str), _A]: ...
-96 | class C[T: [a]](Generic[_A]): ...
-   |
+    |
+100 | # Single-element constraints should not be converted to a bound.
+    - class C[T: (str,)](Generic[_A]): ...
+101 + class C[T: (str), _A]: ...
+102 | class C[T: [a]](Generic[_A]): ...
+    |
 note: This is an unsafe fix and may change runtime behavior
 
 RUF053 [*] Class with type parameter list inherits from `Generic`
-  --> RUF053.py:96:17
-   |
-94 | # Single-element constraints should not be converted to a bound.
-95 | class C[T: (str,)](Generic[_A]): ...
-96 | class C[T: [a]](Generic[_A]): ...
-   |                 ^^^^^^^^^^^
+   --> RUF053.py:102:17
+    |
+100 | # Single-element constraints should not be converted to a bound.
+101 | class C[T: (str,)](Generic[_A]): ...
+102 | class C[T: [a]](Generic[_A]): ...
+    |                 ^^^^^^^^^^^
 help: Remove `Generic` base class
-   |
-95 | class C[T: (str,)](Generic[_A]): ...
-   - class C[T: [a]](Generic[_A]): ...
-96 + class C[T: [a], _A]: ...
-97 |
-   |
+    |
+101 | class C[T: (str,)](Generic[_A]): ...
+    - class C[T: [a]](Generic[_A]): ...
+102 + class C[T: [a], _A]: ...
+103 |
+    |
 note: This is an unsafe fix and may change runtime behavior

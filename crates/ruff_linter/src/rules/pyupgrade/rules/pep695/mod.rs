@@ -242,6 +242,10 @@ struct TypeVarReferenceVisitor<'a> {
     /// Tracks whether any non-TypeVars have been seen to avoid replacing generic parameters when an
     /// unknown `TypeVar` is encountered.
     any_skipped: bool,
+    /// Tracks whether any type variables with unpacked keyword arguments have been seen. These
+    /// aren't added to `vars`, and no fix should be offered if any are found. See
+    /// [`TypeVarLookup::UnpackedKwargs`].
+    any_unpacked_kwargs: bool,
 }
 
 /// Recursively collects the names of type variable references present in an expression.
@@ -275,10 +279,10 @@ impl<'a> Visitor<'a> for TypeVarReferenceVisitor<'a> {
 
         match expr {
             Expr::Name(name) if name.ctx.is_load() => {
-                if let Some(var) = expr_name_to_type_var(self.semantic, name) {
-                    self.vars.push(var);
-                } else {
-                    self.any_skipped = true;
+                match expr_name_to_type_var(self.semantic, name) {
+                    TypeVarLookup::Resolved(var) => self.vars.push(var),
+                    TypeVarLookup::UnpackedKwargs => self.any_unpacked_kwargs = true,
+                    TypeVarLookup::Unresolved => self.any_skipped = true,
                 }
             }
             _ => visitor::walk_expr(self, expr),
@@ -286,23 +290,41 @@ impl<'a> Visitor<'a> for TypeVarReferenceVisitor<'a> {
     }
 }
 
+/// The result of looking up the definition of a type variable with [`expr_name_to_type_var`].
+pub(crate) enum TypeVarLookup<'a> {
+    /// The name couldn't be resolved to a type variable defined in the current module. For example,
+    /// it may refer to a type variable imported from another module, or to something other than a
+    /// type variable.
+    Unresolved,
+    /// The name refers to a type variable defined in the current module.
+    Resolved(TypeVar<'a>),
+    /// The name refers to a type variable defined in the current module with unpacked keyword
+    /// arguments, such as `TypeVar("T", **{"default": int})`. These can pass a bound or a default
+    /// that would be lost when converting the type variable to a type parameter, so no fix should
+    /// be offered.
+    UnpackedKwargs,
+}
+
 pub(crate) fn expr_name_to_type_var<'a>(
     semantic: &'a SemanticModel,
     name: &'a ExprName,
-) -> Option<TypeVar<'a>> {
-    let StmtAssign { value, .. } = semantic
+) -> TypeVarLookup<'a> {
+    let Some(StmtAssign { value, .. }) = semantic
         .lookup_symbol(name.id.as_str())
         .binding_id()
         .and_then(|binding_id| semantic.binding(binding_id).source)
-        .map(|node_id| semantic.statement(node_id))?
-        .as_assign_stmt()?;
+        .map(|node_id| semantic.statement(node_id))
+        .and_then(Stmt::as_assign_stmt)
+    else {
+        return TypeVarLookup::Unresolved;
+    };
 
     match value.as_ref() {
         Expr::Subscript(ExprSubscript {
             value: subscript_value,
             ..
         }) if semantic.match_typing_expr(subscript_value, "TypeVar") => {
-            return Some(TypeVar {
+            return TypeVarLookup::Resolved(TypeVar {
                 name: &name.id,
                 restriction: None,
                 kind: TypeParamKind::TypeVar,
@@ -319,7 +341,7 @@ pub(crate) fn expr_name_to_type_var<'a>(
             } else if semantic.match_typing_expr(func, "ParamSpec") {
                 TypeParamKind::ParamSpec
             } else {
-                return None;
+                return TypeVarLookup::Unresolved;
             };
 
             if arguments
@@ -327,6 +349,14 @@ pub(crate) fn expr_name_to_type_var<'a>(
                 .first()
                 .is_some_and(Expr::is_string_literal_expr)
             {
+                if arguments
+                    .keywords
+                    .iter()
+                    .any(|keyword| keyword.arg.is_none())
+                {
+                    return TypeVarLookup::UnpackedKwargs;
+                }
+
                 // `default` was added in PEP 696 and Python 3.13. We now support converting
                 // TypeVars with defaults to PEP 695 type parameters.
                 //
@@ -353,7 +383,7 @@ pub(crate) fn expr_name_to_type_var<'a>(
                     None
                 };
 
-                return Some(TypeVar {
+                return TypeVarLookup::Resolved(TypeVar {
                     name: &name.id,
                     restriction,
                     kind,
@@ -363,7 +393,7 @@ pub(crate) fn expr_name_to_type_var<'a>(
         }
         _ => {}
     }
-    None
+    TypeVarLookup::Unresolved
 }
 
 /// Check if the current statement is nested within another [`StmtClassDef`] or [`StmtFunctionDef`].

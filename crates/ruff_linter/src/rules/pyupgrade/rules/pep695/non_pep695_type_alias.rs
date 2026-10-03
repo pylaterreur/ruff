@@ -15,8 +15,8 @@ use crate::{Edit, Fix, FixAvailability, Violation};
 use ruff_python_ast::PythonVersion;
 
 use super::{
-    DisplayTypeVars, TypeParamKind, TypeVar, TypeVarReferenceVisitor, expr_name_to_type_var,
-    non_default_follows_default,
+    DisplayTypeVars, TypeParamKind, TypeVar, TypeVarLookup, TypeVarReferenceVisitor,
+    expr_name_to_type_var, non_default_follows_default,
 };
 
 /// ## What it does
@@ -59,6 +59,11 @@ use super::{
 /// type ListOfInt = list[int]
 /// type PositiveInt = Annotated[int, Gt(0)]
 /// ```
+///
+/// ## Fix availability
+///
+/// A fix is not available if any of the type variables is defined with unpacked keyword arguments,
+/// such as `TypeVar("T", **kwargs)`, since the fix would drop any bound or default passed this way.
 ///
 /// ## Fix safety
 ///
@@ -109,7 +114,7 @@ enum TypeAliasKind {
 }
 
 impl Violation for NonPEP695TypeAlias {
-    const FIX_AVAILABILITY: FixAvailability = FixAvailability::Always;
+    const FIX_AVAILABILITY: FixAvailability = FixAvailability::Sometimes;
 
     #[derive_message_formats]
     fn message(&self) -> String {
@@ -177,28 +182,30 @@ pub(crate) fn non_pep695_type_alias_type(checker: &Checker, stmt: &StmtAssign) {
         return;
     }
 
-    let Some(vars) = type_params
-        .iter()
-        .map(|expr| {
-            expr.as_name_expr().map(|name| {
-                expr_name_to_type_var(checker.semantic(), name).unwrap_or(TypeVar {
-                    name: &name.id,
-                    restriction: None,
-                    kind: TypeParamKind::TypeVar,
-                    default: None,
-                })
-            })
-        })
-        .collect::<Option<Vec<_>>>()
-    else {
-        return;
-    };
+    let mut vars = Vec::with_capacity(type_params.len());
+    let mut any_unpacked_kwargs = false;
+    for type_param in type_params {
+        let Some(name) = type_param.as_name_expr() else {
+            return;
+        };
+        match expr_name_to_type_var(checker.semantic(), name) {
+            TypeVarLookup::Resolved(type_var) => vars.push(type_var),
+            TypeVarLookup::UnpackedKwargs => any_unpacked_kwargs = true,
+            TypeVarLookup::Unresolved => vars.push(TypeVar {
+                name: &name.id,
+                restriction: None,
+                kind: TypeParamKind::TypeVar,
+                default: None,
+            }),
+        }
+    }
 
     create_diagnostic(
         checker,
         stmt.into(),
         &target_name.id,
         &vars,
+        any_unpacked_kwargs,
         TypeAliasKind::TypeAliasType,
         &unwrapped_call_argument(
             call,
@@ -238,14 +245,15 @@ pub(crate) fn non_pep695_type_alias(checker: &Checker, stmt: &StmtAnnAssign) {
         return;
     };
 
-    let vars = {
+    let (vars, any_unpacked_kwargs) = {
         let mut visitor = TypeVarReferenceVisitor {
             vars: vec![],
             semantic: checker.semantic(),
             any_skipped: false,
+            any_unpacked_kwargs: false,
         };
         visitor.visit_expr(value);
-        visitor.vars
+        (visitor.vars, visitor.any_unpacked_kwargs)
     };
 
     // Type variables must be unique; filter while preserving order.
@@ -262,17 +270,22 @@ pub(crate) fn non_pep695_type_alias(checker: &Checker, stmt: &StmtAnnAssign) {
         stmt.into(),
         name,
         &vars,
+        any_unpacked_kwargs,
         TypeAliasKind::TypeAlias,
         &checker.source()[range_with_parentheses],
     );
 }
 
 /// Generate a [`Diagnostic`] for a non-PEP 695 type alias or type alias type.
+///
+/// No fix is offered if `any_unpacked_kwargs` is `true`, i.e. if the alias uses a type variable
+/// defined with unpacked keyword arguments. Such type variables are not included in `type_vars`.
 fn create_diagnostic(
     checker: &Checker,
     stmt: StmtRef,
     name: &Name,
     type_vars: &[TypeVar],
+    any_unpacked_kwargs: bool,
     type_alias_kind: TypeAliasKind,
     value_source: &str,
 ) {
@@ -293,6 +306,20 @@ fn create_diagnostic(
         return;
     }
 
+    let mut diagnostic = checker.report_diagnostic(
+        NonPEP695TypeAlias {
+            name: name.to_string(),
+            type_alias_kind,
+        },
+        stmt.range(),
+    );
+
+    // The fix would drop any bound or default passed in unpacked keyword arguments, like
+    // `TypeVar("T", **{"default": int})`, so only offer the diagnostic.
+    if any_unpacked_kwargs {
+        return;
+    }
+
     let source = checker.source();
 
     let content = format!(
@@ -301,13 +328,5 @@ fn create_diagnostic(
     );
     let edit = Edit::range_replacement(content, stmt.range());
 
-    checker
-        .report_diagnostic(
-            NonPEP695TypeAlias {
-                name: name.to_string(),
-                type_alias_kind,
-            },
-            stmt.range(),
-        )
-        .set_fix(Fix::unsafe_edit(edit));
+    diagnostic.set_fix(Fix::unsafe_edit(edit));
 }
