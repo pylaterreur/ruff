@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fs;
 use std::io;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::sync::OnceLock;
 use thiserror::Error;
@@ -455,15 +455,19 @@ impl Notebook {
 
     /// Write the notebook back to the given [`Write`] implementer.
     pub fn write(&self, writer: &mut dyn Write) -> Result<(), NotebookError> {
+        // The serializer writes every JSON token separately. Buffer the output so that writing a
+        // notebook to a file or to stdout doesn't take a system call per token or per line.
+        let mut writer = BufWriter::new(writer);
         // https://github.com/psf/black/blob/69ca0a4c7a365c5f5eea519a90980bab72cab764/src/black/__init__.py#LL1041
         let formatter = serde_json::ser::PrettyFormatter::with_indent(b" ");
-        let mut serializer = serde_json::Serializer::with_formatter(writer, formatter);
+        let mut serializer = serde_json::Serializer::with_formatter(&mut writer, formatter);
         SortAlphabetically(&self.raw)
             .serialize(&mut serializer)
             .map_err(NotebookError::Json)?;
         if self.trailing_newline {
-            writeln!(serializer.into_inner())?;
+            writeln!(writer)?;
         }
+        writer.flush()?;
         Ok(())
     }
 }
