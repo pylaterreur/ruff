@@ -2498,15 +2498,25 @@ impl<'db> ClassType<'db> {
             };
 
             if let Some(signature) = signature {
+                let class_literal = self.class_literal(db);
                 let synthesized_signature = |signature: &Signature<'db>| {
+                    // An explicit `self` annotation can select the constructed type, as in
+                    // `__init__` overloads that each accept a different specialization of a
+                    // generic class. It only does so if it names this class, though: an
+                    // annotation that names a base class (such as the `self: Base` of an
+                    // inherited dataclass `__init__`) must not replace the instance type of a
+                    // subclass. This matches the result of calling the class directly. Type
+                    // variables other than `Self` are solved against the receiver below.
                     let self_annotation = signature
                         .parameters()
                         .get_positional(0)
                         .filter(|parameter| !parameter.inferred_annotation)
                         .map(Parameter::annotated_type)
-                        .filter(|ty| {
-                            ty.as_typevar()
-                                .is_none_or(|bound_typevar| !bound_typevar.typevar(db).is_self(db))
+                        .filter(|ty| match ty {
+                            Type::TypeVar(bound_typevar) => !bound_typevar.typevar(db).is_self(db),
+                            _ => ty
+                                .nominal_class(db, env)
+                                .is_some_and(|class| class.class_literal(db) == class_literal),
                         });
                     let return_type = self_annotation.unwrap_or(instance_type);
                     let generic_context = GenericContext::merge_optional(

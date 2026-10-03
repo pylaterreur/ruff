@@ -183,11 +183,8 @@ class Base:
 
 class Derived(Base): ...
 
-# TODO: should be `() -> Derived`
-reveal_type(into_regular_callable(Derived))  # revealed: () -> Base
+reveal_type(into_regular_callable(Derived))  # revealed: () -> Derived
 
-# TODO: no error
-# error: [invalid-assignment]
 derived: Callable[[], Derived] = Derived
 base: Callable[[], Base] = Derived
 
@@ -196,8 +193,6 @@ class Proto(Protocol):
 
 class Implementation(Proto): ...
 
-# TODO: no error
-# error: [invalid-assignment]
 implementation: Callable[[], Implementation] = Implementation
 
 class Box[T]:
@@ -218,16 +213,12 @@ mismatched_box: Callable[[int], Box[str]] = Box  # error: [invalid-assignment]
 
 class IntBox(Box[int]): ...
 
-# TODO: no error
-# error: [invalid-assignment]
 int_box_subclass: Callable[[int], IntBox] = IntBox
 # mypy shows no error here, but pyright does.
 mismatched_int_box_subclass: Callable[[str], IntBox] = IntBox  # error: [invalid-assignment]
 
 class GenericBox[T](Box[T]): ...
 
-# TODO: no error
-# error: [invalid-assignment]
 generic_box: Callable[[int], GenericBox[int]] = GenericBox
 # mypy shows no error here, but pyright does.
 mismatched_generic_box: Callable[[int], GenericBox[str]] = GenericBox  # error: [invalid-assignment]

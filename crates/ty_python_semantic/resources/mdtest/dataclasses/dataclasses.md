@@ -1932,26 +1932,18 @@ class Base:
 class Derived(Base): ...
 
 reveal_type(into_regular_callable(Base))  # revealed: (x: int = 0) -> Base
-# TODO: should be `(x: int = 0) -> Derived`
-reveal_type(into_regular_callable(Derived))  # revealed: (x: int = 0) -> Base
+reveal_type(into_regular_callable(Derived))  # revealed: (x: int = 0) -> Derived
 
-# TODO: no error
-# error: [invalid-assignment]
 derived_factory: Callable[[int], Derived] = Derived
 base_factory: Callable[[int], Base] = Derived
 
 def _(derived_class: type[Derived]):
-    # TODO: no error
-    # error: [invalid-assignment]
     derived_class_factory: Callable[[int], Derived] = derived_class
 
-# TODO: should be `defaultdict[Unknown, Derived]`
-reveal_type(defaultdict(Derived))  # revealed: defaultdict[Unknown, Base]
+reveal_type(defaultdict(Derived))  # revealed: defaultdict[Unknown, Derived]
 
 @dataclass
 class Container:
-    # TODO: no error
-    # error: [invalid-assignment] "Object of type `dataclasses.Field[Base]` is not assignable to `Derived`"
     derived: Derived = field(default_factory=Derived)
 
 @dataclass(kw_only=True)
@@ -1959,8 +1951,6 @@ class KwOnlyBase: ...
 
 class KwOnlyDerived(KwOnlyBase): ...
 
-# TODO: no error
-# error: [invalid-assignment]
 kw_only_factory: Callable[[], KwOnlyDerived] = KwOnlyDerived
 ```
 
@@ -2486,12 +2476,9 @@ reveal_type(result_int)  # revealed: ChildOfParentDataclass[int]
 result_str = uses_dataclass("hello")
 reveal_type(result_str)  # revealed: ChildOfParentDataclass[str]
 
-# TODO: should be `[T](value: T) -> ChildOfParentDataclass[T]`
-# revealed: [T](value: T) -> ParentDataclass[T]
+# revealed: [T](value: T) -> ChildOfParentDataclass[T]
 reveal_type(into_regular_callable(ChildOfParentDataclass))
 
-# TODO: no error
-# error: [invalid-assignment]
 child_factory: Callable[[int], ChildOfParentDataclass[int]] = ChildOfParentDataclass
 ```
 
