@@ -249,8 +249,7 @@ class Name(Node): ...
 
 def _(node: Node | None):
     if isinstance(node, Name) and (node := node.parent) is not None:
-        # TODO: should be `Node`
-        reveal_type(node)  # revealed: Name
+        reveal_type(node)  # revealed: Node
 
 def f() -> int | None: ...
 def g() -> str | None: ...
@@ -259,22 +258,19 @@ def check(value: object) -> bool:
 
 def _():
     if (x := f()) is None and None is not (x := f()):
-        # TODO: should be `int`
-        reveal_type(x)  # revealed: Never
+        reveal_type(x)  # revealed: int
     else:
         reveal_type(x)  # revealed: int | None
 
 def _():
     if (x := f()) is not None and check(x := g()):
-        # TODO: should be `str | None`
-        reveal_type(x)  # revealed: str
+        reveal_type(x)  # revealed: str | None
 
 def _():
     if (x := f()) is None or check(x := g()):
         pass
     else:
-        # TODO: should be `str | None`
-        reveal_type(x)  # revealed: str
+        reveal_type(x)  # revealed: str | None
 ```
 
 mypy and pyright infer `Node` in the first example. In the others, mypy infers `int`, even after
@@ -290,22 +286,18 @@ class C:
 
 def _():
     if (x := f()) is None and (x := 1):
-        # TODO: should be `Literal[1]`
-        reveal_type(x)  # revealed: Never
+        reveal_type(x)  # revealed: Literal[1]
 
 def _(c: C):
     if c.a is None and None is not (c := C()).a:
-        # TODO: should be `int`
-        reveal_type(c.a)  # revealed: Never
+        reveal_type(c.a)  # revealed: int
 
 def _():
     if ((x := f()) is None and check(x)) and None is not (x := f()):
-        # TODO: should be `int`
-        reveal_type(x)  # revealed: Never
+        reveal_type(x)  # revealed: int
 
 def _(y: int | None):
     if y is not None and (x := f()) is not None and check(x := g()):
         reveal_type(y)  # revealed: int
-        # TODO: should be `str | None`
-        reveal_type(x)  # revealed: str
+        reveal_type(x)  # revealed: str | None
 ```

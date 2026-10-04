@@ -5087,25 +5087,33 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
         let db = self.db;
         let inference = infer_expression_types(db, expression, TypeContext::default());
         let env = self.env.clone();
-        let sub_constraints = expr_bool_op
-            .values
-            .iter()
-            // filter our arms with statically known truthiness
-            .filter(|expr| {
-                inference.expression_type(*expr).bool(db, &env)
-                    != match expr_bool_op.op {
-                        BoolOp::And => Truthiness::AlwaysTrue,
-                        BoolOp::Or => Truthiness::AlwaysFalse,
-                    }
-            })
-            .map(|sub_expr| {
-                self.evaluate_expression_node_predicate(sub_expr, expression, is_positive)
-            })
-            .collect::<Vec<_>>();
+        // Arms with statically known truthiness don't narrow anything.
+        let has_known_truthiness = |expr: &ast::Expr| {
+            inference.expression_type(expr).bool(db, &env)
+                == match expr_bool_op.op {
+                    BoolOp::And => Truthiness::AlwaysTrue,
+                    BoolOp::Or => Truthiness::AlwaysFalse,
+                }
+        };
         match (expr_bool_op.op, is_positive) {
             (BoolOp::And, true) | (BoolOp::Or, false) => {
                 let mut aggregation: Option<NarrowingConstraints> = None;
-                for sub_constraint in sub_constraints.into_iter().flatten() {
+                for value in &expr_bool_op.values {
+                    // An assignment expression in this arm rebinds its target, so the earlier arms
+                    // narrowed the previous binding.
+                    if let Some(aggregation) = &mut aggregation
+                        && any_over_expr(value, ast::Expr::is_named_expr)
+                    {
+                        aggregation.retain(|place, _| !self.is_rebound_by(*place, value));
+                    }
+                    if has_known_truthiness(value) {
+                        continue;
+                    }
+                    let Some(sub_constraint) =
+                        self.evaluate_expression_node_predicate(value, expression, is_positive)
+                    else {
+                        continue;
+                    };
                     if let Some(ref mut some_aggregation) = aggregation {
                         merge_constraints_and(some_aggregation, sub_constraint);
                     } else {
@@ -5115,6 +5123,14 @@ impl<'db> NarrowingConstraintsBuilder<'db, '_> {
                 aggregation
             }
             (BoolOp::Or, true) | (BoolOp::And, false) => {
+                let sub_constraints = expr_bool_op
+                    .values
+                    .iter()
+                    .filter(|&value| !has_known_truthiness(value))
+                    .map(|value| {
+                        self.evaluate_expression_node_predicate(value, expression, is_positive)
+                    })
+                    .collect::<Vec<_>>();
                 let (mut first, rest) = {
                     let mut it = sub_constraints.into_iter();
                     (it.next()?, it)
