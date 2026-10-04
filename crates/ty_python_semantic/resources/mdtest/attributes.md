@@ -3006,6 +3006,41 @@ def h[T: list[int] | None](x: T):
     x.append
 ```
 
+After narrowing a type variable with a union upper bound, an attribute that is missing on any of the
+remaining elements of the bound is also an error. mypy and pyright report these too:
+
+```py
+class A:
+    attr: int
+
+class B: ...
+
+class C:
+    attr: str
+
+def negative_narrowing[T: A | B](x: T):
+    if not isinstance(x, A):
+        # TODO: should emit [unresolved-attribute] instead
+        # error: [possibly-missing-attribute]
+        x.attr
+
+def positive_narrowing[T: A | B](x: T):
+    if isinstance(x, B):
+        # TODO: should emit [unresolved-attribute] instead
+        # error: [possibly-missing-attribute]
+        x.attr
+
+def three_elements[T: A | B | C](x: T):
+    if not isinstance(x, A):
+        # TODO: should emit [unresolved-attribute] instead
+        # error: [possibly-missing-attribute]
+        x.attr
+    if not isinstance(x, B):
+        # TODO: should not emit a diagnostic, since `A & ~B` and `C & ~B` both have `attr`
+        # error: [possibly-missing-attribute]
+        x.attr
+```
+
 ## Inherited class attributes
 
 ### Basic
