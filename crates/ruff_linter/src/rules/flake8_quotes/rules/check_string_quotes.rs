@@ -281,6 +281,19 @@ fn docstring(checker: &Checker, range: TextRange) {
         return;
     }
 
+    if text_starts_at_consecutive_quote(locator, range, quotes_settings.docstring_quotes) {
+        // Fixing this would merge the new quotes with those of the preceding empty string,
+        // turning `""'doc'` into `"""doc"` (a syntax error) or `""'''doc'''` into `"""""doc"""`
+        // (a different string).
+        checker.report_diagnostic(
+            BadQuotesDocstring {
+                preferred_quote: quotes_settings.docstring_quotes,
+            },
+            range,
+        );
+        return;
+    }
+
     let mut diagnostic = checker.report_diagnostic(
         BadQuotesDocstring {
             preferred_quote: quotes_settings.docstring_quotes,

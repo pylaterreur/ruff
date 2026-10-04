@@ -70,8 +70,47 @@ Q002 [*] Single quote docstring found but double quotes preferred
 9 |     class Nested(foo()[:]): ''"Start with empty string" ' and lint docstring safely'; pass
   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: Replace single quotes docstring with double quotes
-  |
-8 |
-  -     class Nested(foo()[:]): ''"Start with empty string" ' and lint docstring safely'; pass
-9 +     class Nested(foo()[:]): ''"Start with empty string" " and lint docstring safely"; pass
-  |
+   |
+8  |
+   -     class Nested(foo()[:]): ''"Start with empty string" ' and lint docstring safely'; pass
+9  +     class Nested(foo()[:]): ''"Start with empty string" " and lint docstring safely"; pass
+10 |
+   |
+
+Q002 Single quote docstring found but double quotes preferred
+  --> docstring_singles_mixed_quotes_class_var_1.py:13:7
+   |
+12 | class StartWithEmptyStringInPreferredQuotes():
+13 |     ""'Start with empty string' ' and lint docstring safely'
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^
+14 |
+15 |     def foo(self):
+   |
+help: Replace single quotes docstring with double quotes
+
+Q002 [*] Single quote docstring found but double quotes preferred
+  --> docstring_singles_mixed_quotes_class_var_1.py:13:33
+   |
+12 | class StartWithEmptyStringInPreferredQuotes():
+13 |     ""'Start with empty string' ' and lint docstring safely'
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 |
+15 |     def foo(self):
+   |
+help: Replace single quotes docstring with double quotes
+   |
+12 | class StartWithEmptyStringInPreferredQuotes():
+   -     ""'Start with empty string' ' and lint docstring safely'
+13 +     ""'Start with empty string' " and lint docstring safely"
+14 |
+   |
+
+Q002 Single quote docstring found but double quotes preferred
+  --> docstring_singles_mixed_quotes_class_var_1.py:16:11
+   |
+15 |     def foo(self):
+16 |         ""''' Start with empty string and lint docstring safely '''
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 |         pass
+   |
+help: Replace single quotes docstring with double quotes
