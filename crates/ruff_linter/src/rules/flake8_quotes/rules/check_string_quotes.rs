@@ -365,9 +365,22 @@ fn strings(checker: &Checker, sequence: &[TextRange]) {
 
             let string_contents = &trivia.raw_text[3..trivia.raw_text.len() - 3];
             let quote = good_multiline(quotes_settings.multiline_quotes);
+            // If the string directly follows an empty string that uses the new quotes, add a
+            // space so that the quotes don't merge (e.g., `""'''a'''` becomes `"" """a"""`).
+            let separator = if trivia.prefix.is_empty()
+                && text_starts_at_consecutive_quote(
+                    locator,
+                    *range,
+                    quotes_settings.multiline_quotes,
+                ) {
+                " "
+            } else {
+                ""
+            };
             let mut fixed_contents = String::with_capacity(
-                trivia.prefix.len() + string_contents.len() + quote.len() * 2,
+                separator.len() + trivia.prefix.len() + string_contents.len() + quote.len() * 2,
             );
+            fixed_contents.push_str(separator);
             fixed_contents.push_str(trivia.prefix);
             fixed_contents.push_str(quote);
             fixed_contents.push_str(string_contents);

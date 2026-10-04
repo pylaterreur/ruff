@@ -21,3 +21,33 @@ help: Replace single multiline quotes with double quotes
 3 + 'linted' """
 4 |
   |
+
+Q001 [*] Single quote multiline found but double quotes preferred
+  --> singles_multiline_string.py:11:7
+   |
+ 9 | s = '''"This should not be linted due to having would-be quadruple end quote"'''
+10 |
+11 | s = ""'''This should be linted, and fixed without a would-be quintuple start quote'''
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | s = ""u'''This should be linted, and fixed without a would-be quintuple start quote'''
+   |
+help: Replace single multiline quotes with double quotes
+   |
+10 |
+   - s = ""'''This should be linted, and fixed without a would-be quintuple start quote'''
+11 + s = "" """This should be linted, and fixed without a would-be quintuple start quote"""
+12 | s = ""u'''This should be linted, and fixed without a would-be quintuple start quote'''
+   |
+
+Q001 [*] Single quote multiline found but double quotes preferred
+  --> singles_multiline_string.py:12:7
+   |
+11 | s = ""'''This should be linted, and fixed without a would-be quintuple start quote'''
+12 | s = ""u'''This should be linted, and fixed without a would-be quintuple start quote'''
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: Replace single multiline quotes with double quotes
+   |
+11 | s = ""'''This should be linted, and fixed without a would-be quintuple start quote'''
+   - s = ""u'''This should be linted, and fixed without a would-be quintuple start quote'''
+12 + s = ""u"""This should be linted, and fixed without a would-be quintuple start quote"""
+   |
