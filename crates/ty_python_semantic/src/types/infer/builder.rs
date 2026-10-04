@@ -11165,12 +11165,20 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
                     //
                     // Attribute lookup on a bounded type variable delegates to its upper bound, so
                     // use that bound here too when determining whether the lookup was on a union.
-                    let union_like_type = if let Type::TypeVar(typevar) = value_type
-                        && let Some(bound) = typevar.typevar(db).upper_bound(db, env)
-                    {
-                        bound
-                    } else {
-                        value_type
+                    // This includes type variables in intersections: if `x: T` with `T: A | B` is
+                    // narrowed by `not isinstance(x, A)` to `T & ~A`, replacing `T` with its upper
+                    // bound gives `(A | B) & ~A`, which simplifies to `B & ~A`.
+                    let upper_bound = |ty: Type<'db>| match ty {
+                        Type::TypeVar(typevar) => {
+                            typevar.typevar(db).upper_bound(db, env).unwrap_or(ty)
+                        }
+                        _ => ty,
+                    };
+                    let union_like_type = match value_type {
+                        Type::Intersection(intersection) => {
+                            intersection.map_positive(db, env, |element| upper_bound(*element))
+                        }
+                        _ => upper_bound(value_type),
                     };
 
                     if let Some(union) = union_like_type.as_union_like(db) {
@@ -11211,6 +11219,23 @@ impl<'db, 'ast> TypeInferenceBuilder<'db, 'ast> {
                             }
                             return type_when_bound;
                         }
+                    } else if union_like_type != value_type
+                        && union_like_type
+                            .member(db, env, attr_name)
+                            .place
+                            .is_undefined()
+                    {
+                        // Narrowing can exclude every element of the upper bound that has the
+                        // attribute, as in `T & B` for `T: A | B`, where only `A` has it.
+                        if let Some(builder) =
+                            self.context.report_lint(&UNRESOLVED_ATTRIBUTE, attribute)
+                        {
+                            builder.into_diagnostic(format_args!(
+                                "Object of type `{}` has no attribute `{attr_name}`",
+                                value_type.display(db, env),
+                            ));
+                        }
+                        return type_when_bound;
                     }
 
                     report_possibly_missing_attribute(

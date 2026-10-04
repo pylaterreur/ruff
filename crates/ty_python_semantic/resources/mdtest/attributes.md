@@ -3020,20 +3020,17 @@ class C:
 
 def negative_narrowing[T: A | B](x: T):
     if not isinstance(x, A):
-        # TODO: should emit [unresolved-attribute] instead
-        # error: [possibly-missing-attribute]
+        # error: [unresolved-attribute] "Object of type `T@negative_narrowing & ~A` has no attribute `attr`"
         x.attr
 
 def positive_narrowing[T: A | B](x: T):
     if isinstance(x, B):
-        # TODO: should emit [unresolved-attribute] instead
-        # error: [possibly-missing-attribute]
+        # error: [unresolved-attribute] "Object of type `T@positive_narrowing & B` has no attribute `attr`"
         x.attr
 
 def three_elements[T: A | B | C](x: T):
     if not isinstance(x, A):
-        # TODO: should emit [unresolved-attribute] instead
-        # error: [possibly-missing-attribute]
+        # error: [unresolved-attribute] "Attribute `attr` is not defined on `B & ~A` in union `(B & ~A) | (C & ~A)`"
         x.attr
     if not isinstance(x, B):
         # TODO: should not emit a diagnostic, since `A & ~B` and `C & ~B` both have `attr`
