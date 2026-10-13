@@ -674,6 +674,172 @@ info: parameter `value` is missing
 info: This violates the Liskov Substitution Principle
 ```
 
+## Renamed and positional-only parameters
+
+An argument for a positional-or-keyword parameter can also be passed by keyword. An override that
+renames such a parameter, or makes it positional-only, no longer accepts a call that passes the
+argument by keyword.
+
+### Overrides that only reject keyword arguments
+
+```py
+class Base:
+    def method(self, x: int) -> None: ...
+
+class Renamed(Base):
+    # TODO: should only be reported by a separate rule that is disabled by default
+    def method(self, y: int) -> None: ...  # error: [invalid-method-override]
+
+def call_with_keyword(obj: Base) -> None:
+    # Raises `TypeError` at runtime if `obj` is an instance of `Renamed`.
+    obj.method(x=1)
+```
+
+Such an override still accepts every call that passes these arguments positionally. mypy does not
+report these overrides. pyright reports them, except a renamed parameter of a dunder method, or a
+renamed parameter whose name starts with an underscore in the superclass method.
+
+```pyi
+from typing import overload
+
+class Parent:
+    def renamed_wider(self, x: int) -> None: ...
+    def renamed_with_default(self, x: int = 0) -> None: ...
+    def made_positional_only(self, x: int) -> None: ...
+    def made_legacy_positional_only(self, x: int) -> None: ...
+    def made_variadic(self, x: int) -> None: ...
+    def renamed_and_made_positional_only(self, x: int) -> None: ...
+    def private_name(self, _x: int) -> None: ...
+    def __getitem__(self, key: int) -> int: ...
+    @staticmethod
+    def static(x: int) -> None: ...
+    @overload
+    def overloaded(self, x: int) -> int: ...
+    @overload
+    def overloaded(self, x: str) -> str: ...
+
+class Child(Parent):
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def renamed_wider(self, y: object) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def renamed_with_default(self, y: int = 0) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def made_positional_only(self, x: int, /) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def made_legacy_positional_only(self, __x: int) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def made_variadic(self, *args: int) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def renamed_and_made_positional_only(self, y: int, /) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def private_name(self, y: int) -> None: ...
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def __getitem__(self, index: int) -> int: ...
+    @staticmethod
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def static(y: int) -> None: ...
+    @overload
+    def overloaded(self, y: int) -> int: ...
+    @overload
+    # TODO: should only be reported by a separate rule that is disabled by default
+    # error: [invalid-method-override]
+    def overloaded(self, y: str) -> str: ...
+```
+
+The same applies to methods that a class inherits from different bases:
+
+```pyi
+class Left:
+    def method(self, x: int) -> None: ...
+
+class Right:
+    def method(self, y: int) -> None: ...
+
+# TODO: should only be reported by a separate rule that is disabled by default
+class Combined(Left, Right): ...  # error: [invalid-method-override]
+```
+
+An override that renames a parameter of one superclass method can also be incompatible with the
+method of another superclass:
+
+```pyi
+class Renaming:
+    def method(self, x: int) -> int: ...
+
+class Narrowing:
+    def method(self, y: int) -> bool: ...
+
+class Both(Renaming, Narrowing):
+    # TODO: should only be reported by a separate rule that is disabled by default,
+    # in addition to an `invalid-method-override` error for `Narrowing.method`
+    # error: [invalid-method-override] "Invalid override of method `method`"
+    def method(self, y: int) -> int: ...
+```
+
+The other superclass can also be an ancestor of the parent class. `Middle.method` is a valid
+override of `Top.method`: it accepts `x` as a keyword argument, and also positionally.
+`Bottom.method` only renames the parameter of `Middle.method`, but it no longer accepts the keyword
+argument that `Top.method` requires:
+
+```pyi
+class Top:
+    def method(self, *, x: int) -> None: ...
+
+class Middle(Top):
+    def method(self, x: int) -> None: ...
+
+class Bottom(Middle):
+    # TODO: should only be reported by a separate rule that is disabled by default,
+    # in addition to an `invalid-method-override` error for `Top.method`
+    # error: [invalid-method-override] "Definition is incompatible with `Middle.method`"
+    def method(self, y: int) -> None: ...
+```
+
+### Overrides that are also incompatible otherwise
+
+An override that is also incompatible for positional arguments is still an `invalid-method-override`
+error:
+
+```pyi
+class Parent:
+    def renamed_narrower(self, x: int) -> None: ...
+    def renamed_with_return_type(self, x: int) -> int: ...
+    def renamed_keyword_only(self, *, x: int) -> None: ...
+
+class Child(Parent):
+    def renamed_narrower(self, y: bool) -> None: ...  # error: [invalid-method-override]
+    def renamed_with_return_type(self, y: int) -> str: ...  # error: [invalid-method-override]
+    def renamed_keyword_only(self, *, y: int) -> None: ...  # error: [invalid-method-override]
+```
+
+So is an override that accepts a keyword argument with the original name in another way, since such
+an argument is bound to a different parameter. mypy also reports these overrides:
+
+```pyi
+class Parent2:
+    def swapped(self, x: int, y: int) -> None: ...
+    def keyword_only_with_original_name(self, x: int) -> None: ...
+    def variadic_keywords(self, x: int) -> None: ...
+    def variadic_keywords_wrong_type(self, x: int) -> None: ...
+
+class Child2(Parent2):
+    def swapped(self, y: int, x: int) -> None: ...  # error: [invalid-method-override]
+    # error: [invalid-method-override]
+    def keyword_only_with_original_name(self, y: int, *, x: int = 0) -> None: ...
+    def variadic_keywords(self, y: int, **kwargs: int) -> None: ...  # error: [invalid-method-override]
+    # error: [invalid-method-override]
+    def variadic_keywords_wrong_type(self, *args: int, **kwargs: str) -> None: ...
+```
+
 ## `ClassVar` and instance variables
 
 A pure class variable cannot override an inherited instance variable, and an instance variable
