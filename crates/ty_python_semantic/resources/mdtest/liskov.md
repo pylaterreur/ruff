@@ -269,18 +269,18 @@ class Super2:
     def method2(self, x): ...
 
 class Sub16(Super2):
-    def method2(self, x, /): ...  # snapshot: invalid-method-override
+    def method2(self, x, /): ...  # snapshot: invalid-parameter-name-override
 ```
 
 ```snapshot
-error[invalid-method-override]: Invalid override of method `method2`
+info[invalid-parameter-name-override]: Invalid override of method `method2`
   --> src/mdtest_snippet.pyi:46:9
    |
 43 |     def method2(self, x): ...
    |         ---------------- `Super2.method2` defined here
 44 |
 45 | class Sub16(Super2):
-46 |     def method2(self, x, /): ...  # snapshot: invalid-method-override
+46 |     def method2(self, x, /): ...  # snapshot: invalid-parameter-name-override
    |         ^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Super2.method2`
 info: parameter `x` is positional-only but must also accept keyword arguments
 info: This violates the Liskov Substitution Principle
@@ -301,7 +301,7 @@ error[invalid-method-override]: Invalid override of method `method2`
    |         ---------------- `Super2.method2` defined here
 44 |
 45 | class Sub16(Super2):
-46 |     def method2(self, x, /): ...  # snapshot: invalid-method-override
+46 |     def method2(self, x, /): ...  # snapshot: invalid-parameter-name-override
 47 | class Sub17(Super2):
 48 |     def method2(self, *, x): ...  # snapshot: invalid-method-override
    |         ^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Super2.method2`
@@ -678,7 +678,8 @@ info: This violates the Liskov Substitution Principle
 
 An argument for a positional-or-keyword parameter can also be passed by keyword. An override that
 renames such a parameter, or makes it positional-only, no longer accepts a call that passes the
-argument by keyword.
+argument by keyword. If such an override is otherwise compatible with the overridden method, ty
+reports it with the `invalid-parameter-name-override` rule instead of `invalid-method-override`.
 
 ### Overrides that only reject keyword arguments
 
@@ -687,12 +688,25 @@ class Base:
     def method(self, x: int) -> None: ...
 
 class Renamed(Base):
-    # TODO: should only be reported by a separate rule that is disabled by default
-    def method(self, y: int) -> None: ...  # error: [invalid-method-override]
+    def method(self, y: int) -> None: ...  # snapshot: invalid-parameter-name-override
 
 def call_with_keyword(obj: Base) -> None:
     # Raises `TypeError` at runtime if `obj` is an instance of `Renamed`.
     obj.method(x=1)
+```
+
+```snapshot
+info[invalid-parameter-name-override]: Invalid override of method `method`
+ --> src/mdtest_snippet.py:5:9
+  |
+2 |     def method(self, x: int) -> None: ...
+  |         ---------------------------- `Base.method` defined here
+3 |
+4 | class Renamed(Base):
+5 |     def method(self, y: int) -> None: ...  # snapshot: invalid-parameter-name-override
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Base.method`
+info: the parameter named `y` does not match `x` (and can be used as a keyword parameter)
+info: This violates the Liskov Substitution Principle
 ```
 
 Such an override still accepts every call that passes these arguments positionally. mypy does not
@@ -719,39 +733,29 @@ class Parent:
     def overloaded(self, x: str) -> str: ...
 
 class Child(Parent):
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def renamed_wider(self, y: object) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def renamed_with_default(self, y: int = 0) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def made_positional_only(self, x: int, /) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def made_legacy_positional_only(self, __x: int) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def made_variadic(self, *args: int) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def renamed_and_made_positional_only(self, y: int, /) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def private_name(self, y: int) -> None: ...
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def __getitem__(self, index: int) -> int: ...
     @staticmethod
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def static(y: int) -> None: ...
     @overload
     def overloaded(self, y: int) -> int: ...
     @overload
-    # TODO: should only be reported by a separate rule that is disabled by default
-    # error: [invalid-method-override]
+    # error: [invalid-parameter-name-override]
     def overloaded(self, y: str) -> str: ...
 ```
 
@@ -764,12 +768,11 @@ class Left:
 class Right:
     def method(self, y: int) -> None: ...
 
-# TODO: should only be reported by a separate rule that is disabled by default
-class Combined(Left, Right): ...  # error: [invalid-method-override]
+class Combined(Left, Right): ...  # error: [invalid-parameter-name-override]
 ```
 
 An override that renames a parameter of one superclass method can also be incompatible with the
-method of another superclass:
+method of another superclass. ty reports both:
 
 ```pyi
 class Renaming:
@@ -779,10 +782,39 @@ class Narrowing:
     def method(self, y: int) -> bool: ...
 
 class Both(Renaming, Narrowing):
-    # TODO: should only be reported by a separate rule that is disabled by default,
-    # in addition to an `invalid-method-override` error for `Narrowing.method`
-    # error: [invalid-method-override] "Invalid override of method `method`"
+    # snapshot: invalid-parameter-name-override
+    # snapshot: invalid-method-override
     def method(self, y: int) -> int: ...
+```
+
+```snapshot
+error[invalid-method-override]: Invalid override of method `method`
+  --> src/mdtest_snippet.pyi:60:9
+   |
+55 |     def method(self, y: int) -> bool: ...
+   |         ---------------------------- `Narrowing.method` defined here
+56 |
+57 | class Both(Renaming, Narrowing):
+58 |     # snapshot: invalid-parameter-name-override
+59 |     # snapshot: invalid-method-override
+60 |     def method(self, y: int) -> int: ...
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Narrowing.method`
+info: incompatible return types: `int` is not assignable to `bool`
+info: This violates the Liskov Substitution Principle
+
+
+info[invalid-parameter-name-override]: Invalid override of method `method`
+  --> src/mdtest_snippet.pyi:60:9
+   |
+60 |     def method(self, y: int) -> int: ...
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Renaming.method`
+   |
+  ::: src/mdtest_snippet.pyi:52:9
+   |
+52 |     def method(self, x: int) -> int: ...
+   |         --------------------------- `Renaming.method` defined here
+info: the parameter named `y` does not match `x` (and can be used as a keyword parameter)
+info: This violates the Liskov Substitution Principle
 ```
 
 The other superclass can also be an ancestor of the parent class. `Middle.method` is a valid
@@ -798,9 +830,8 @@ class Middle(Top):
     def method(self, x: int) -> None: ...
 
 class Bottom(Middle):
-    # TODO: should only be reported by a separate rule that is disabled by default,
-    # in addition to an `invalid-method-override` error for `Top.method`
-    # error: [invalid-method-override] "Definition is incompatible with `Middle.method`"
+    # error: [invalid-parameter-name-override] "Definition is incompatible with `Middle.method`"
+    # error: [invalid-method-override] "Definition is incompatible with `Top.method`"
     def method(self, y: int) -> None: ...
 ```
 
@@ -838,6 +869,76 @@ class Child2(Parent2):
     def variadic_keywords(self, y: int, **kwargs: int) -> None: ...  # error: [invalid-method-override]
     # error: [invalid-method-override]
     def variadic_keywords_wrong_type(self, *args: int, **kwargs: str) -> None: ...
+```
+
+### The rule is disabled by default
+
+Unless `invalid-parameter-name-override` is enabled, ty does not report an override that only
+renames a parameter or makes it positional-only:
+
+```toml
+[rules]
+invalid-parameter-name-override = "ignore"
+```
+
+```pyi
+class Base:
+    def method(self, x: int) -> None: ...
+
+class Renamed(Base):
+    def method(self, y: int) -> None: ...
+
+class PositionalOnly(Base):
+    def method(self, x: int, /) -> None: ...
+
+class Left:
+    def method(self, x: int) -> None: ...
+
+class Right:
+    def method(self, y: int) -> None: ...
+
+class Combined(Left, Right): ...
+```
+
+An incompatibility with the method of another superclass is still reported:
+
+```pyi
+class Renaming:
+    def method(self, x: int) -> int: ...
+
+class Narrowing:
+    def method(self, y: int) -> bool: ...
+
+class Child(Renaming, Narrowing):
+    def method(self, y: int) -> int: ...  # snapshot: invalid-method-override
+```
+
+```snapshot
+error[invalid-method-override]: Invalid override of method `method`
+  --> src/mdtest_snippet.pyi:24:9
+   |
+21 |     def method(self, y: int) -> bool: ...
+   |         ---------------------------- `Narrowing.method` defined here
+22 |
+23 | class Child(Renaming, Narrowing):
+24 |     def method(self, y: int) -> int: ...  # snapshot: invalid-method-override
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `Narrowing.method`
+info: incompatible return types: `int` is not assignable to `bool`
+info: This violates the Liskov Substitution Principle
+```
+
+The same applies when that superclass is an ancestor of the parent class:
+
+```pyi
+class Top:
+    def method(self, *, x: int) -> None: ...
+
+class Middle(Top):
+    def method(self, x: int) -> None: ...
+
+class Bottom(Middle):
+    # error: [invalid-method-override] "Definition is incompatible with `Top.method`"
+    def method(self, y: int) -> None: ...
 ```
 
 ## `ClassVar` and instance variables
@@ -1704,7 +1805,7 @@ class A:
     def get(self, default): ...
 
 class B(A):
-    def get(self, default, /): ...  # snapshot: invalid-method-override
+    def get(self, default, /): ...  # snapshot: invalid-parameter-name-override
 
 get = 56
 
@@ -1720,14 +1821,14 @@ class D(C):
 ```
 
 ```snapshot
-error[invalid-method-override]: Invalid override of method `get`
+info[invalid-parameter-name-override]: Invalid override of method `get`
  --> src/other_stub.pyi:5:9
   |
 2 |     def get(self, default): ...
   |         ------------------ `A.get` defined here
 3 |
 4 | class B(A):
-5 |     def get(self, default, /): ...  # snapshot: invalid-method-override
+5 |     def get(self, default, /): ...  # snapshot: invalid-parameter-name-override
   |         ^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `A.get`
 info: parameter `default` is positional-only but must also accept keyword arguments
 info: This violates the Liskov Substitution Principle
@@ -1766,13 +1867,13 @@ class Left:
 class Right:
     def method(self, right): ...
 
-class Parent(Left, Right): ...  # error: [invalid-method-override]
+class Parent(Left, Right): ...  # error: [invalid-parameter-name-override]
 
 class Child(Parent):
     def method(self, left): ...
 
 class ChangesSignature(Parent):
-    # error: [invalid-method-override] "Definition is incompatible with `Left.method`"
+    # error: [invalid-parameter-name-override] "Definition is incompatible with `Left.method`"
     def method(self, right): ...
 ```
 
@@ -2283,14 +2384,14 @@ class A:
 import one
 
 class A(one.A):
-    def foo(self, y): ...  # snapshot: invalid-method-override
+    def foo(self, y): ...  # snapshot: invalid-parameter-name-override
 ```
 
 ```snapshot
-error[invalid-method-override]: Invalid override of method `foo`
+info[invalid-parameter-name-override]: Invalid override of method `foo`
  --> src/two.pyi:4:9
   |
-4 |     def foo(self, y): ...  # snapshot: invalid-method-override
+4 |     def foo(self, y): ...  # snapshot: invalid-parameter-name-override
   |         ^^^^^^^^^^^^ Definition is incompatible with `one.A.foo`
   |
  ::: src/one.pyi:2:9

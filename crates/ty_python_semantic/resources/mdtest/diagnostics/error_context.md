@@ -702,7 +702,7 @@ class Child3(Parent):
 ```
 
 ```snapshot
-error[invalid-method-override]: Invalid override of method `method`
+info[invalid-parameter-name-override]: Invalid override of method `method`
   --> src/mdtest_snippet.py:23:9
    |
 23 |     def method(self, y: str):

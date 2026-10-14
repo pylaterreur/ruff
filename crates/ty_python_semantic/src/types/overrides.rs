@@ -17,12 +17,12 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
     Db, ProgramEnvironment,
-    lint::LintId,
+    lint::{LintId, LintMetadata},
     place::{DefinedPlace, Place, PlaceAndQualifiers, TypeOrigin},
     types::{
         CallableType, ClassBase, ClassLiteral, ClassType, IntersectionType, KnownClass,
-        MemberLookupPolicy, Parameter, Parameters, Signature, StaticClassLiteral, Type,
-        TypeContext, TypeQualifiers,
+        MemberLookupPolicy, Parameter, ParameterKind, Parameters, Signature, StaticClassLiteral,
+        Type, TypeContext, TypeQualifiers,
         call::CallArguments,
         class::{CodeGeneratorKind, FieldKind, MethodDecorator},
         constraints::ConstraintSetBuilder,
@@ -30,10 +30,11 @@ use crate::{
         diagnostic::{
             INVALID_ASSIGNMENT, INVALID_ATTRIBUTE_OVERRIDE, INVALID_DATACLASS,
             INVALID_EXPLICIT_OVERRIDE, INVALID_METHOD_OVERRIDE, INVALID_MUTABLE_OVERRIDE,
-            INVALID_NAMED_TUPLE, INVALID_NAMED_TUPLE_OVERRIDE, INVALID_PROPERTY_TYPE_OVERRIDE,
-            MISSING_OVERRIDE_DECORATOR, OVERRIDE_OF_FINAL_METHOD, OVERRIDE_OF_FINAL_VARIABLE,
-            report_incompatible_base_method, report_invalid_method_override,
-            report_overridden_final_method, report_overridden_final_variable,
+            INVALID_NAMED_TUPLE, INVALID_NAMED_TUPLE_OVERRIDE, INVALID_PARAMETER_NAME_OVERRIDE,
+            INVALID_PROPERTY_TYPE_OVERRIDE, MISSING_OVERRIDE_DECORATOR, OVERRIDE_OF_FINAL_METHOD,
+            OVERRIDE_OF_FINAL_VARIABLE, report_incompatible_base_method,
+            report_invalid_method_override, report_overridden_final_method,
+            report_overridden_final_variable,
         },
         enums::{EnumMetadata, enum_metadata, is_enum_class_by_inheritance},
         function::{FunctionDecorators, FunctionType, KnownFunction, OverloadLiteral},
@@ -86,7 +87,13 @@ pub(super) fn check_class<'db>(
     let own_class_members: FxHashSet<_> = all_end_of_scope_members(db, scope).collect();
     let class_specialized = class.identity_specialization(db);
     if configuration.check_method_liskov_violations() && !inconsistent_generic_bases {
-        check_inherited_method_conflicts(context, class, class_specialized, &own_class_members);
+        check_inherited_method_conflicts(
+            context,
+            configuration,
+            class,
+            class_specialized,
+            &own_class_members,
+        );
     }
     let enum_info = enum_metadata(db, class.into());
 
@@ -156,6 +163,7 @@ pub(super) fn check_class<'db>(
 /// valid contract to check.
 fn check_inherited_method_conflicts<'db>(
     context: &InferContext<'db, '_>,
+    configuration: OverrideRulesConfig,
     class: StaticClassLiteral<'db>,
     class_specialized: ClassType<'db>,
     own_class_members: &FxHashSet<MemberWithDefinition<'db>>,
@@ -254,6 +262,7 @@ fn check_inherited_method_conflicts<'db>(
                 continue;
             };
 
+            let mut parameter_name_diagnostic_emitted = false;
             for contract_owner in mro[index + 1..].iter().copied() {
                 let Some((contract_decorator, contract_ty)) =
                     source_method_contract(db, env, contract_owner, receiver, name)
@@ -337,15 +346,36 @@ fn check_inherited_method_conflicts<'db>(
                 else {
                     continue;
                 };
+                // As for overrides, keep checking the remaining contracts after skipping or
+                // reporting a conflict that only involves parameter names.
+                let violation = if selected_decorator == contract_decorator {
+                    MethodOverrideViolation::classify(db, env, selected_ty, contract_ty)
+                } else {
+                    MethodOverrideViolation::Incompatible
+                };
+                if violation == MethodOverrideViolation::ParameterName
+                    && parameter_name_diagnostic_emitted
+                {
+                    continue;
+                }
+                let Some(lint) = configuration.method_override_lint(violation) else {
+                    continue;
+                };
                 report_incompatible_base_method(
                     context,
+                    lint,
                     class,
                     name,
                     (owner, member.first_reachable_definition, selected_decorator),
                     (contract_owner, contract_definition, contract_decorator),
                     || selected_ty.assignability_error_context(db, env, contract_ty),
                 );
-                continue 'members;
+                match violation {
+                    MethodOverrideViolation::Incompatible => continue 'members,
+                    MethodOverrideViolation::ParameterName => {
+                        parameter_name_diagnostic_emitted = true;
+                    }
+                }
             }
         }
     }
@@ -651,6 +681,7 @@ fn check_class_declaration<'db>(
     let mut has_dynamic_superclass = false;
     let mut has_typeddict_in_mro = false;
     let mut liskov_diagnostic_emitted = false;
+    let mut parameter_name_diagnostic_emitted = false;
     let mut missing_override_target: Option<MissingOverrideTarget<'db>> = None;
     let mut overridden_final_method = None;
     let mut overridden_final_variable: Option<(ClassType<'db>, Option<Definition<'db>>)> = None;
@@ -988,8 +1019,27 @@ fn check_class_declaration<'db>(
                 continue;
             }
 
+            // An override that only renames parameters of this superclass method can still be
+            // incompatible with the method of another superclass. Keep checking the remaining
+            // superclasses after skipping or reporting such a violation, but report it only once.
+            let violation = MethodOverrideViolation::classify(
+                db,
+                env,
+                subclass_override_type,
+                superclass_override_type,
+            );
+            if violation == MethodOverrideViolation::ParameterName
+                && parameter_name_diagnostic_emitted
+            {
+                continue;
+            }
+            let Some(lint) = configuration.method_override_lint(violation) else {
+                continue;
+            };
+
             report_invalid_method_override(
                 context,
+                lint,
                 &member.name,
                 class,
                 *first_reachable_definition,
@@ -1006,7 +1056,10 @@ fn check_class_declaration<'db>(
                 },
             );
 
-            liskov_diagnostic_emitted = true;
+            match violation {
+                MethodOverrideViolation::Incompatible => liskov_diagnostic_emitted = true,
+                MethodOverrideViolation::ParameterName => parameter_name_diagnostic_emitted = true,
+            }
         }
     }
 
@@ -1260,6 +1313,92 @@ fn method_override_types<'db>(
         .map(|callable| callable.into_regular(db));
 
     Some((subclass_type, superclass_callable.to_type(db, env)))
+}
+
+/// How an overriding method is incompatible with the method that it overrides.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MethodOverrideViolation {
+    /// The override rejects calls that the overridden method accepts.
+    Incompatible,
+    /// The override renames a positional-or-keyword parameter of the overridden method, or makes
+    /// it positional-only, but it is otherwise compatible: it only rejects calls that pass the
+    /// argument by keyword.
+    ParameterName,
+}
+
+impl MethodOverrideViolation {
+    /// Classifies an override whose type is not assignable to the type of the overridden method.
+    ///
+    /// The override only violates the parameter names of the overridden method if it is
+    /// compatible with the overridden method when every positional-or-keyword parameter of the
+    /// overridden method is positional-only:
+    ///
+    /// ```python
+    /// class Base:
+    ///     def method(self, x: int) -> None: ...
+    ///
+    /// class Sub(Base):
+    ///     def method(self, y: int) -> None: ...  # Accepts `method(1)`, rejects `method(x=1)`.
+    /// ```
+    ///
+    /// If the override accepts a keyword argument with the original name in another way, a call
+    /// that passes the argument by keyword binds it to a different parameter, so the override is
+    /// incompatible:
+    ///
+    /// ```python
+    /// class Sub2(Base):
+    ///     def method(self, y: int, *, x: str = "") -> None: ...
+    /// ```
+    fn classify<'db>(
+        db: &'db dyn Db,
+        env: &ProgramEnvironment<'db>,
+        subclass_type: Type<'db>,
+        superclass_type: Type<'db>,
+    ) -> Self {
+        let (Some(subclass_callables), Some(superclass_callables)) = (
+            subclass_type.try_upcast_to_callable(db, env),
+            superclass_type.try_upcast_to_callable(db, env),
+        ) else {
+            return Self::Incompatible;
+        };
+
+        let mut has_positional_or_keyword_parameter = false;
+        for superclass_signature in superclass_callables.signatures(db) {
+            for (index, parameter) in superclass_signature.parameters().iter().enumerate() {
+                let ParameterKind::PositionalOrKeyword { name, .. } = parameter.kind() else {
+                    continue;
+                };
+                has_positional_or_keyword_parameter = true;
+                // Check whether a keyword argument for this parameter would be bound to a
+                // different parameter of the override.
+                let rebinds_keyword_argument =
+                    subclass_callables.signatures(db).any(|subclass_signature| {
+                        let parameters = subclass_signature.parameters();
+                        let keeps_parameter = parameters.get(index).is_some_and(|parameter| {
+                            parameter.is_positional_or_keyword() && parameter.name() == Some(name)
+                        });
+                        !keeps_parameter
+                            && (parameters.keyword_by_name(name).is_some()
+                                || parameters.keyword_variadic().is_some())
+                    });
+                if rebinds_keyword_argument {
+                    return Self::Incompatible;
+                }
+            }
+        }
+        if !has_positional_or_keyword_parameter {
+            return Self::Incompatible;
+        }
+
+        let positional_only_superclass_type = superclass_callables
+            .map(|callable| callable.with_positional_only_parameters(db))
+            .to_type(db, env);
+        if subclass_type.is_assignable_to(db, env, positional_only_superclass_type) {
+            Self::ParameterName
+        } else {
+            Self::Incompatible
+        }
+    }
 }
 
 /// Whether an attribute declaration is a class variable or an instance variable.
@@ -1568,6 +1707,7 @@ bitflags! {
         const MISSING_OVERRIDE_DECORATOR = 1 << 9;
         const LISKOV_PROPERTIES = 1 << 10;
         const LISKOV_MUTABLE = 1 << 11;
+        const LISKOV_PARAMETER_NAMES = 1 << 12;
     }
 }
 
@@ -1580,6 +1720,9 @@ impl From<&InferContext<'_, '_>> for OverrideRulesConfig {
 
         if rule_selection.is_enabled(LintId::of(&INVALID_METHOD_OVERRIDE)) {
             config |= OverrideRulesConfig::LISKOV_METHODS;
+        }
+        if rule_selection.is_enabled(LintId::of(&INVALID_PARAMETER_NAME_OVERRIDE)) {
+            config |= OverrideRulesConfig::LISKOV_PARAMETER_NAMES;
         }
         if rule_selection.is_enabled(LintId::of(&INVALID_ATTRIBUTE_OVERRIDE)) {
             config |= OverrideRulesConfig::LISKOV_ATTRIBUTES;
@@ -1625,7 +1768,22 @@ impl OverrideRulesConfig {
     }
 
     const fn check_method_liskov_violations(self) -> bool {
-        self.contains(OverrideRulesConfig::LISKOV_METHODS)
+        self.intersects(Self::LISKOV_METHODS.union(Self::LISKOV_PARAMETER_NAMES))
+    }
+
+    /// Returns the rule that reports a method override violation of this kind, if it is enabled.
+    fn method_override_lint(
+        self,
+        violation: MethodOverrideViolation,
+    ) -> Option<&'static LintMetadata> {
+        match violation {
+            MethodOverrideViolation::Incompatible => self
+                .contains(Self::LISKOV_METHODS)
+                .then_some(&INVALID_METHOD_OVERRIDE),
+            MethodOverrideViolation::ParameterName => self
+                .contains(Self::LISKOV_PARAMETER_NAMES)
+                .then_some(&INVALID_PARAMETER_NAME_OVERRIDE),
+        }
     }
 
     const fn check_attribute_liskov_violations(self) -> bool {

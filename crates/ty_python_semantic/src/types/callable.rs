@@ -866,6 +866,12 @@ impl<'db> CallableType<'db> {
         self.with_kind(db, CallableTypeKind::Regular)
     }
 
+    /// Returns this callable with each positional-or-keyword parameter made positional-only, so
+    /// that it only accepts the arguments for those parameters positionally.
+    pub(crate) fn with_positional_only_parameters(self, db: &'db dyn Db) -> CallableType<'db> {
+        self.with_signatures(db, self.signatures(db).with_positional_only_parameters())
+    }
+
     /// Retain every parameter signature and its generic context, but erase return types
     /// that do not participate in a `ParamSpec` specialization.
     pub(crate) fn into_paramspec_value(self, db: &'db dyn Db) -> CallableType<'db> {

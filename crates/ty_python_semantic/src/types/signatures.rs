@@ -212,6 +212,11 @@ impl<'db> CallableSignature<'db> {
         self.overloads.iter()
     }
 
+    /// Returns these signatures with each positional-or-keyword parameter made positional-only.
+    pub(crate) fn with_positional_only_parameters(&self) -> Self {
+        Self::from_overloads(self.iter().map(Signature::with_positional_only_parameters))
+    }
+
     /// Returns the union of all overload return types, or `Unknown` if there are no overloads.
     pub(crate) fn overload_return_type_or_unknown(
         &self,
@@ -2199,6 +2204,12 @@ impl<'db> Signature<'db> {
     /// Create a new signature with the given parameters.
     fn with_parameters(self, parameters: Parameters<'db>) -> Self {
         Self { parameters, ..self }
+    }
+
+    /// Returns this signature with each positional-or-keyword parameter made positional-only.
+    fn with_positional_only_parameters(&self) -> Self {
+        let parameters = self.parameters.with_positional_only_parameters();
+        self.clone().with_parameters(parameters)
     }
 
     /// Create a new signature with the given return type.
@@ -5409,6 +5420,21 @@ impl<'db> Parameters<'db> {
             .rfind(|(_, parameter)| parameter.is_keyword_variadic())
     }
 
+    /// Returns this parameter list with each positional-or-keyword parameter made
+    /// positional-only, keeping the kind of the parameter list.
+    fn with_positional_only_parameters(&self) -> Self {
+        if !self.iter().any(Parameter::is_positional_or_keyword) {
+            return self.clone();
+        }
+        Self::new(
+            self.iter()
+                .cloned()
+                .map(Parameter::into_positional_only)
+                .collect::<Box<[_]>>(),
+            self.kind(),
+        )
+    }
+
     /// Moves required suffix elements that match a homogeneous variadic into its prefix.
     fn with_homogeneous_variadic_suffix_in_prefix(self, db: &'db dyn Db) -> Self {
         let Some((variadic_index, variadic)) = self.variadic() else {
@@ -5814,6 +5840,21 @@ impl<'db> Parameter<'db> {
             .map(|index| index.get() as usize - 1)
     }
 
+    /// Converts a positional-or-keyword parameter into a positional-only parameter with the same
+    /// name, type and default value. Other parameters are returned unchanged.
+    fn into_positional_only(self) -> Self {
+        match self.kind {
+            ParameterKind::PositionalOrKeyword { name, default_type } => Self {
+                kind: ParameterKind::PositionalOnly {
+                    name: Some(name),
+                    default_type,
+                },
+                ..self
+            },
+            _ => self,
+        }
+    }
+
     fn apply_type_mapping_impl<'a>(
         &self,
         db: &'db dyn Db,
@@ -5973,6 +6014,11 @@ impl<'db> Parameter<'db> {
     /// Returns `true` if this is a keyword-variadic parameter.
     pub(crate) fn is_keyword_variadic(&self) -> bool {
         matches!(self.kind, ParameterKind::KeywordVariadic { .. })
+    }
+
+    /// Returns `true` if this is a standard (positional or keyword) parameter.
+    pub(crate) fn is_positional_or_keyword(&self) -> bool {
+        matches!(self.kind, ParameterKind::PositionalOrKeyword { .. })
     }
 
     /// Returns `true` if this is either a positional-only or standard (positional or keyword)

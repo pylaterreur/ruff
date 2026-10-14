@@ -41,9 +41,9 @@ accepts_super(Sub())
 
 
 class Sub2(Super):
-    # Liskov violation: the superclass method can be called with a `x=`
-    # keyword argument, but the subclass method does not accept it.
-    def method(self, y) -> int:  # error: [invalid-method-override]
+    # Liskov violation: the superclass method can be called with an `x`
+    # argument, but the subclass method does not accept it.
+    def method(self) -> int:  # error: [invalid-method-override]
         return 42
 
 
@@ -51,6 +51,10 @@ class Sub2(Super):
 # ty cannot catch this error due to the violation of the Liskov Substitution Principle.
 accepts_super(Sub2())
 ```
+
+An override that only renames a positional-or-keyword parameter of the overridden method, or makes
+it positional-only, is reported by `invalid-parameter-name-override` instead. That rule is disabled
+by default.
 
 ## Common issues
 
@@ -84,7 +88,8 @@ Ruff has several rules that will encourage you to rename a parameter, or change 
 if it thinks you're falling into a certain anti-pattern. For example, Ruff's
 [ARG002](https://docs.astral.sh/ruff/rules/unused-method-argument/) rule recommends that an unused
 parameter should either be removed or renamed to start with `_`. Applying either of these
-suggestions can cause ty to start reporting an `invalid-method-override` error if the function in
+suggestions can cause ty to start reporting an `invalid-method-override` error (or, for a renamed
+parameter, an `invalid-parameter-name-override` error, if that rule is enabled) if the function in
 question is a method on a subclass that overrides a method on a superclass, and the change would
 cause the subclass method to no longer accept all argument combinations that the superclass method
 accepts.

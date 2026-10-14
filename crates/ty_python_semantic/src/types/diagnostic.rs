@@ -12,7 +12,7 @@ use super::{
 use crate::dependency::is_direct_dependency;
 use crate::diagnostic::{did_you_mean, format_enumeration};
 use crate::importer::{ImportAction, ImportRequest, MembersInScope};
-use crate::lint::{Level, LintRegistryBuilder, LintStatus};
+use crate::lint::{Level, LintMetadata, LintRegistryBuilder, LintStatus};
 use crate::place::{DefinedPlace, Place, imported_symbol, place_from_bindings};
 use crate::suppression::FileSuppressionId;
 use crate::types::abstract_methods::AbstractMethods;
@@ -188,6 +188,7 @@ pub(crate) fn register_lints(registry: &mut LintRegistryBuilder) {
     registry.register_lint(&INVALID_PROPERTY_TYPE_OVERRIDE);
     registry.register_lint(&INVALID_MUTABLE_OVERRIDE);
     registry.register_lint(&INVALID_METHOD_OVERRIDE);
+    registry.register_lint(&INVALID_PARAMETER_NAME_OVERRIDE);
     registry.register_lint(&INVALID_EXPLICIT_OVERRIDE);
     registry.register_lint(&MISSING_OVERRIDE_DECORATOR);
     registry.register_lint(&SUPER_CALL_IN_NAMED_TUPLE_METHOD);
@@ -1380,6 +1381,15 @@ declare_lint! {
         summary: "detects method definitions that violate the Liskov Substitution Principle",
         status: LintStatus::stable("0.0.1-alpha.20"),
         default_level: Level::Error,
+    }
+}
+
+declare_lint! {
+    #[doc = include_str!("../../resources/lint_docs/invalid-parameter-name-override.md")]
+    pub(crate) static INVALID_PARAMETER_NAME_OVERRIDE = {
+        summary: "detects method overrides that rename parameters or make them positional-only",
+        status: LintStatus::stable("0.0.87"),
+        default_level: Level::Ignore,
     }
 }
 
@@ -5041,6 +5051,7 @@ pub(crate) fn report_shadowed_type_variable<'db>(
 #[expect(clippy::too_many_arguments)]
 pub(super) fn report_invalid_method_override<'db>(
     context: &InferContext<'db, '_>,
+    lint: &'static LintMetadata,
     member: &str,
     subclass: ClassType<'db>,
     subclass_definition: Definition<'db>,
@@ -5072,7 +5083,7 @@ pub(super) fn report_invalid_method_override<'db>(
         subclass_definition.full_range(db, context.module()).range()
     };
 
-    let Some(builder) = context.report_lint(&INVALID_METHOD_OVERRIDE, diagnostic_range) else {
+    let Some(builder) = context.report_lint(lint, diagnostic_range) else {
         return;
     };
 
@@ -5236,6 +5247,7 @@ pub(super) fn report_invalid_method_override<'db>(
 /// Reports an incompatible pair of source-defined methods in a resolved MRO.
 pub(super) fn report_incompatible_base_method<'db>(
     context: &InferContext<'db, '_>,
+    lint: &'static LintMetadata,
     class: StaticClassLiteral<'db>,
     member: &str,
     selected: (ClassType<'db>, Definition<'db>, MethodDecorator),
@@ -5243,8 +5255,7 @@ pub(super) fn report_incompatible_base_method<'db>(
     error_context: impl FnOnce() -> ErrorContextTree<'db>,
 ) {
     let db = context.db();
-    let Some(builder) = context.report_lint(&INVALID_METHOD_OVERRIDE, class.header_range(db))
-    else {
+    let Some(builder) = context.report_lint(lint, class.header_range(db)) else {
         return;
     };
 
